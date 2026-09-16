@@ -1460,7 +1460,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
                 {/* Mode-specific practice area */}
                 {(module === 'listen' || module === 'read') && (
                   <WordBookPlaybackControls
-                    key={currentItem.id}
+                    key={`playback-${currentItem.id}`}
                     item={currentItem}
                     module={module}
                     onCompleted={handleItemCompleted}
@@ -1470,7 +1470,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
                 )}
                 {module === 'write' && (
                   <WritePractice
-                    key={currentItem.id}
+                    key={`write-${currentItem.id}`}
                     item={currentItem}
                     onCorrect={() => goToNext({ force: true })}
                     onCompleted={handleItemCompleted}
@@ -1478,7 +1478,7 @@ export function WordBookPractice({ module }: WordBookPracticeProps) {
                 )}
                 {(module === 'read' || module === 'speak') && (
                   <ReadSpeakPractice
-                    key={currentItem.id}
+                    key={`read-speak-${currentItem.id}`}
                     item={currentItem}
                     module={module}
                     onCompleted={handleItemCompleted}
