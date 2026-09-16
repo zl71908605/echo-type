@@ -40,4 +40,17 @@ test.describe('Landing Page', () => {
     await page.goto('/');
     await expect(page.locator('footer')).toContainText('StepUp');
   });
+
+  // 其余用例跑在 playwright.config.ts 预置的"已选择英文"偏好下，这里清掉它
+  // 来验证首次访问的默认界面语言。
+  test('defaults to Chinese when no language preference is saved', async ({ page }) => {
+    await page.addInitScript(() => localStorage.removeItem('echotype_language_settings'));
+    await page.goto('/');
+
+    await expect(page.locator('h1')).toContainText('沉浸式练习');
+    await expect(page.getByText('免费开始')).toBeVisible();
+    await expect(page.getByRole('heading', { name: '听力' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'AI 导师' })).toBeVisible();
+    await expect(page.locator('nav').getByText('小步')).toBeVisible();
+  });
 });

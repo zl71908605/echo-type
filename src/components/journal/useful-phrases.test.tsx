@@ -13,6 +13,22 @@ const state = {
 };
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+
+// renderToStaticMarkup 走服务端渲染，而 zustand 在 SSR 下返回的是 store 的初始
+// 状态，无法通过 setState 切换语言。这里显式固定英文（字典的 canonical 语言），
+// 让断言聚焦组件结构而不是默认文案。
+vi.mock('@/lib/i18n/use-i18n', async () => {
+  const { getLanguageMessages, translate } = await import('@/lib/i18n/dictionary');
+  const dictionary = getLanguageMessages('en');
+  return {
+    useI18n: (namespace: keyof typeof dictionary) => ({
+      interfaceLanguage: 'en' as const,
+      messages: dictionary[namespace],
+      t: (key: string, values?: Record<string, string | number>) =>
+        translate('en', namespace as never, key as never, values),
+    }),
+  };
+});
 vi.mock('@/stores/journal-store', () => ({
   flattenJournalPhrases: () => [
     {

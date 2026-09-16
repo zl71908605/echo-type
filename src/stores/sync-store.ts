@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { db } from '@/lib/db';
+import { readDevLoginSession } from '@/lib/dev-login';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import { getLastSyncedAt, SyncEngine } from '@/lib/sync/engine';
 
@@ -50,6 +51,10 @@ function saveToStorage(state: { isSyncEnabled: boolean; lastSyncedAt: string | n
 }
 
 async function getCurrentUserId(): Promise<string | null> {
+  // 本地开发会话没有云端身份，必须让同步彻底失活。否则在「Supabase 已配置 + 浏览器还留着
+  // 真实 cookie」时 getUser() 会返回真实 userId，SyncEngine 要到 fullSync 之后才校验
+  // db.name，可能已经把真实账号的数据拉进开发库。
+  if (readDevLoginSession()) return null;
   if (!isSupabaseConfigured()) return null;
   try {
     const supabase = createClient();

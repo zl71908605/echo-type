@@ -72,7 +72,6 @@ import {
   type ProviderModel,
   type ProviderModelRecommendation,
 } from '@/lib/providers';
-import { createClient } from '@/lib/supabase/client';
 import { detectIOSNativeHost, reportNativeQAState } from '@/lib/tauri';
 
 function getSearchParams() {
@@ -83,6 +82,7 @@ function getSearchParams() {
 }
 
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/stores/auth-store';
 import { useFavoriteStore } from '@/stores/favorite-store';
 import { usePracticeTranslationStore } from '@/stores/practice-translation-store';
 import { usePronunciationStore } from '@/stores/pronunciation-store';
@@ -1521,8 +1521,19 @@ function AccountSection() {
   const { messages: settingsMessages } = useI18n('settings');
   const isIOSNativeHost = detectIOSNativeHost();
   const accountMessages = settingsMessages.account;
-  const [user, setUser] = useState<{ id: string; email?: string; avatar_url?: string } | null>(null);
-  const [loading, setLoading] = useState(true);
+  const signOut = useAuthStore((state) => state.signOut);
+  // 与侧边栏同源读 store 的 user：既能让开发环境登录在这里也显示为已登录，也顺带修掉
+  // 「只在挂载时取一次、不响应登录事件」的旧行为。
+  const storeUser = useAuthStore((state) => state.user);
+  const loading = useAuthStore((state) => state.isLoading);
+  const user = storeUser
+    ? {
+        id: storeUser.id,
+        email: storeUser.email,
+        phone: storeUser.phone,
+        avatar_url: storeUser.user_metadata?.avatar_url as string | undefined,
+      }
+    : null;
   const [signingOut, setSigningOut] = useState(false);
 
   const {
@@ -1537,34 +1548,15 @@ function AccountSection() {
 
   useEffect(() => {
     hydrateSync();
-    const fetchUser = async () => {
-      try {
-        const supabase = createClient();
-        const {
-          data: { user: authUser },
-        } = await supabase.auth.getUser();
-        if (authUser) {
-          setUser({
-            id: authUser.id,
-            email: authUser.email,
-            avatar_url: authUser.user_metadata?.avatar_url as string | undefined,
-          });
-        }
-      } catch {
-        // not authenticated
-      } finally {
-        setLoading(false);
-      }
-    };
-    void fetchUser();
   }, [hydrateSync]);
 
   const handleSignOut = async () => {
     setSigningOut(true);
     try {
-      const supabase = createClient();
-      await supabase.auth.signOut();
-      setUser(null);
+      // 必须走 store 的 signOut：它会调用 switchDatabaseForUser(null)，
+      // 直接调 supabase.auth.signOut() 会让 Dexie 停留在上一个用户的库，
+      // 下一个登录者会看到别人的本地数据。
+      await signOut();
       setSyncEnabled(false);
     } finally {
       setSigningOut(false);
@@ -1667,7 +1659,7 @@ function AccountSection() {
               )}
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-slate-800 truncate">
-                  {user.email ?? accountMessages.fallbackUser}
+                  {user.phone ?? user.email ?? accountMessages.fallbackUser}
                 </p>
                 <p className="text-xs text-slate-400">{accountMessages.signedIn}</p>
               </div>

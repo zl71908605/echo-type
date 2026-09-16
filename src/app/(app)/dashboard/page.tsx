@@ -153,13 +153,10 @@ export default function DashboardPage() {
   const activeProviderId = useProviderStore((s) => s.activeProviderId);
   const activeProviderConnected = useProviderStore((s) => s.isConnected(s.activeProviderId));
   const interfaceLanguage = useLanguageStore((s) => s.interfaceLanguage);
-  const hasExplicitPreference = useLanguageStore((s) => s.hasExplicitPreference);
-  const initialized = useLanguageStore((s) => s.initialized);
   const currentGoal = useLearningGoalStore((s) => s.currentGoal);
 
   const { currentLevel, shouldShowReminder, dismissReminder } = useAssessmentStore();
   const showReminder = shouldShowReminder(stats.totalSessions);
-  const showAutoLanguageNotice = initialized && !hasExplicitPreference;
   const iosNoticeCardClass =
     'rounded-[26px] border border-white/70 bg-white/82 p-4 shadow-[0_14px_34px_rgba(15,23,42,0.06)]';
 
@@ -334,46 +331,50 @@ export default function DashboardPage() {
     },
   ];
 
+  const iosHome = dashboard.iosHome;
   const iosMoreActions = [
     {
       href: '/library',
-      label: 'Library',
-      description: `${stats.totalContent} items`,
+      label: iosHome.actions.library.label,
+      description: iosHome.actions.library.description.replace('{{count}}', String(stats.totalContent)),
       icon: Library,
       toneClass: 'bg-indigo-50 text-indigo-600',
     },
     {
       href: '/favorites',
-      label: 'Favorites',
-      description: 'Saved words',
+      label: iosHome.actions.favorites.label,
+      description: iosHome.actions.favorites.description,
       icon: Heart,
       toneClass: 'bg-rose-50 text-rose-600',
     },
     {
       href: '/library/import',
-      label: 'Import',
-      description: 'Add content',
+      label: iosHome.actions.import.label,
+      description: iosHome.actions.import.description,
       icon: Upload,
       toneClass: 'bg-cyan-50 text-cyan-600',
     },
     {
       href: '/weak-spots',
-      label: 'Weak Spots',
-      description: currentGoal ? 'Goal focus' : 'Practice gaps',
+      label: iosHome.actions.weakSpots.label,
+      description: currentGoal ? iosHome.actions.weakSpots.description : iosHome.actions.weakSpots.descriptionFallback,
       icon: Crosshair,
       toneClass: 'bg-amber-50 text-amber-600',
     },
     {
       href: '/dashboard/analytics',
-      label: 'Analytics',
-      description: stats.totalSessions > 0 ? `${stats.totalSessions} sessions` : 'Progress trends',
+      label: iosHome.actions.analytics.label,
+      description:
+        stats.totalSessions > 0
+          ? iosHome.actions.analytics.description.replace('{{count}}', String(stats.totalSessions))
+          : iosHome.actions.analytics.descriptionFallback,
       icon: TrendingUp,
       toneClass: 'bg-emerald-50 text-emerald-600',
     },
     {
       href: '/settings',
-      label: 'Settings',
-      description: 'AI and voice',
+      label: iosHome.actions.settings.label,
+      description: iosHome.actions.settings.description,
       icon: Settings,
       toneClass: 'bg-slate-100 text-slate-600',
     },
@@ -424,7 +425,7 @@ export default function DashboardPage() {
               <div className="text-right">
                 <p className="text-2xl font-bold leading-none text-orange-600">{stats.streak}</p>
                 <p className="text-[10px] font-medium uppercase tracking-wide text-orange-400">
-                  {dashboard.stats.streak ?? 'Streak'}
+                  {dashboard.stats.streak}
                 </p>
               </div>
             </div>
@@ -434,17 +435,23 @@ export default function DashboardPage() {
 
       {isIOSNativeHost ? (
         <div className="flex flex-wrap items-center gap-2">
-          {stats.streak > 0 ? <span className={IOS_PILL_CLASS}>{stats.streak} day streak</span> : null}
-          <span className={IOS_PILL_CLASS}>{stats.totalSessions} sessions logged</span>
-          <span className={IOS_PILL_CLASS}>{stats.totalContent} learning items</span>
+          {stats.streak > 0 ? (
+            <span className={IOS_PILL_CLASS}>{iosHome.pills.streak.replace('{{count}}', String(stats.streak))}</span>
+          ) : null}
+          <span className={IOS_PILL_CLASS}>
+            {iosHome.pills.sessions.replace('{{count}}', String(stats.totalSessions))}
+          </span>
+          <span className={IOS_PILL_CLASS}>{iosHome.pills.items.replace('{{count}}', String(stats.totalContent))}</span>
         </div>
       ) : null}
 
       {isIOSNativeHost ? (
         <div className="space-y-3">
           <div className="px-1">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">More</p>
-            <h2 className="text-lg font-semibold tracking-[-0.02em] text-slate-950">Quick access</h2>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+              {iosHome.moreEyebrow}
+            </p>
+            <h2 className="text-lg font-semibold tracking-[-0.02em] text-slate-950">{iosHome.quickAccess}</h2>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             {iosMoreActions.map(({ href, label, description, icon: Icon, toneClass }) => (
@@ -466,46 +473,6 @@ export default function DashboardPage() {
           </div>
         </div>
       ) : null}
-
-      {showAutoLanguageNotice && (
-        <div
-          className={
-            isIOSNativeHost
-              ? `${iosNoticeCardClass} flex flex-col gap-3`
-              : 'flex items-center gap-3 rounded-lg border border-indigo-200 bg-indigo-50/60 px-4 py-2.5'
-          }
-        >
-          <div className="min-w-0 flex-1">
-            <p
-              className={
-                isIOSNativeHost ? 'text-sm font-semibold text-slate-900' : 'text-sm font-semibold text-indigo-900'
-              }
-            >
-              {dashboard.autoLanguageNotice.title}
-            </p>
-            <p className={isIOSNativeHost ? 'mt-1 text-sm leading-6 text-slate-500' : 'text-xs text-indigo-600'}>
-              {dashboard.autoLanguageNotice.description.replace(
-                '{{language}}',
-                common.nativeLanguageNames[interfaceLanguage],
-              )}
-            </p>
-          </div>
-          <Link href="/settings" className={isIOSNativeHost ? 'self-start' : ''}>
-            <Button
-              size="sm"
-              variant="outline"
-              className={
-                isIOSNativeHost
-                  ? `${IOS_SECONDARY_BUTTON_CLASS} cursor-pointer`
-                  : 'border-indigo-200 text-indigo-700 hover:bg-indigo-50 cursor-pointer shrink-0'
-              }
-            >
-              <Settings className="mr-1.5 h-3.5 w-3.5" />
-              {dashboard.autoLanguageNotice.cta}
-            </Button>
-          </Link>
-        </div>
-      )}
 
       {/* Stats row */}
       <div className={isIOSNativeHost ? 'space-y-3' : 'space-y-2'}>

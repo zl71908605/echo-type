@@ -1,23 +1,18 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('i18n phase 1', () => {
-  test('uses browser language for first load and shows dashboard/sidebar in Chinese', async ({ page }) => {
-    // Only clear saved preference and mock language on the very first load.
-    // Subsequent navigations/reloads preserve whatever is in localStorage.
+  test('defaults to Chinese on first load and shows dashboard/sidebar in Chinese', async ({ page }) => {
+    // Only clear the saved preference on the very first load. Subsequent
+    // navigations/reloads preserve whatever is in localStorage.
     await page.addInitScript(`
       if (!sessionStorage.getItem('__i18nTestInit')) {
         sessionStorage.setItem('__i18nTestInit', '1');
         localStorage.removeItem('echotype_language_settings');
       }
-      Object.defineProperty(window.navigator, 'language', {
-        configurable: true,
-        get: () => 'zh-CN',
-      });
     `);
     await page.goto('/dashboard');
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('欢迎使用小步');
-    await expect(page.getByText('界面语言已匹配你的浏览器')).toBeVisible();
     await expect(page.getByText('总览', { exact: true })).toBeVisible();
     await expect(page.getByText('今日复习', { exact: true })).toBeVisible();
   });
@@ -28,10 +23,6 @@ test.describe('i18n phase 1', () => {
         sessionStorage.setItem('__i18nTestInit', '1');
         localStorage.removeItem('echotype_language_settings');
       }
-      Object.defineProperty(window.navigator, 'language', {
-        configurable: true,
-        get: () => 'zh-CN',
-      });
     `);
     await page.goto('/settings');
 
@@ -55,7 +46,6 @@ test.describe('i18n phase 1', () => {
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Welcome to StepUp');
     await expect(page.getByText(/Today's Review|Today's Review/)).toBeVisible();
-    await expect(page.getByText('Interface language matched your browser')).toHaveCount(0);
   });
 
   test('URL import fallback error localization', async ({ page }) => {

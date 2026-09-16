@@ -4,6 +4,7 @@ import { ArrowRight, BookOpen, Headphones, MessageCircle, Mic, PenTool, Sparkles
 import Link from 'next/link';
 import { ChatFab } from '@/components/chat/chat-fab';
 import { LandingNav } from '@/components/layout/landing-nav';
+import { useI18n } from '@/lib/i18n/use-i18n';
 import { detectIOSNativeHost } from '@/lib/tauri';
 
 function getNativeHostSearchParam(): string | null {
@@ -13,43 +14,46 @@ function getNativeHostSearchParam(): string | null {
 
 export default function LandingPage() {
   const isIOSNativeHost = getNativeHostSearchParam() === 'ios' || detectIOSNativeHost();
+  const { messages } = useI18n('landing');
+
   const features = [
     {
       icon: Headphones,
-      title: 'Listen',
-      desc: 'Listen to English articles, phrases, sentences, and words with adjustable speed and interactive transcripts.',
+      title: messages.features.listen.title,
+      desc: messages.features.listen.description,
       color: 'bg-blue-500',
       href: '/listen',
     },
     {
       icon: Mic,
-      title: 'Speak',
-      desc: 'Practice speaking with real-time speech recognition and get color-coded pronunciation feedback.',
+      title: messages.features.speak.title,
+      desc: messages.features.speak.description,
       color: 'bg-green-500',
       href: '/speak',
     },
     {
       icon: BookOpen,
-      title: 'Read',
-      desc: 'Read English articles with interactive translation, word collection, and comprehension tracking.',
+      title: messages.features.read.title,
+      desc: messages.features.read.description,
       color: 'bg-amber-500',
       href: '/read',
     },
     {
       icon: PenTool,
-      title: 'Write',
-      desc: 'Practice typing English with real-time error correction, WPM tracking, and spaced repetition.',
+      title: messages.features.write.title,
+      desc: messages.features.write.description,
       color: 'bg-purple-500',
       href: '/write',
     },
     {
       icon: MessageCircle,
-      title: 'AI Tutor',
-      desc: 'Chat with an AI English tutor that knows your learning context and helps you improve.',
+      title: messages.features.aiTutor.title,
+      desc: messages.features.aiTutor.description,
       color: 'bg-indigo-500',
       href: '/dashboard',
     },
   ];
+
   return (
     <div
       className={
@@ -71,48 +75,42 @@ export default function LandingPage() {
           <div className="rounded-[32px] border border-white/70 bg-white/82 px-5 py-6 shadow-[0_24px_54px_rgba(15,23,42,0.08)] backdrop-blur-xl">
             <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-indigo-500">
               <Sparkles className="h-3.5 w-3.5" />
-              English Practice Hub
+              {messages.ios.badge}
             </div>
             <h1 className="mt-4 text-[2.5rem] font-bold leading-[1.02] tracking-[-0.05em] text-slate-950 font-[var(--font-poppins)]">
-              Learn English in one calm, focused daily flow
+              {messages.ios.title}
             </h1>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-500">
-              Switch between listen, speak, read, write and review without leaving your practice context. StepUp keeps
-              every exercise, note and AI hint in one place.
-            </p>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-500">{messages.ios.description}</p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
                 href="/dashboard"
                 className="inline-flex h-12 items-center gap-2 rounded-full bg-indigo-600 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(79,70,229,0.24)] transition-colors duration-200 hover:bg-indigo-700 cursor-pointer"
               >
-                Open Dashboard
+                {messages.ios.openDashboard}
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 href="/speak"
                 className="inline-flex h-12 items-center gap-2 rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors duration-200 hover:bg-slate-50 cursor-pointer"
               >
-                Try Speaking
+                {messages.ios.trySpeaking}
               </Link>
             </div>
           </div>
         ) : (
           <>
             <h1 className="text-5xl md:text-6xl font-bold text-indigo-900 font-[var(--font-poppins)] leading-tight">
-              Master English Through
+              {messages.web.titleLine1}
               <br />
-              <span className="text-indigo-600">Immersive Practice</span>
+              <span className="text-indigo-600">{messages.web.titleLine2}</span>
             </h1>
-            <p className="mt-6 text-lg text-indigo-600 max-w-2xl mx-auto">
-              Listen, speak, read, and write — with AI-powered feedback at every step. Import your own content and
-              master English through immersive practice.
-            </p>
+            <p className="mt-6 text-lg text-indigo-600 max-w-2xl mx-auto">{messages.web.description}</p>
             <div className="mt-10 flex items-center justify-center gap-4">
               <Link
                 href="/dashboard"
                 className="px-8 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors duration-200 flex items-center gap-2 cursor-pointer"
               >
-                Get Started Free
+                {messages.web.cta}
                 <ArrowRight className="w-5 h-5" />
               </Link>
             </div>
@@ -163,7 +161,7 @@ export default function LandingPage() {
             : 'border-t border-indigo-100 py-8 text-center text-sm text-indigo-400'
         }
       >
-        <p>StepUp — Learn English by doing. Built with Next.js, Vercel AI SDK, and Web Speech API.</p>
+        <p>{messages.footer}</p>
       </footer>
 
       <ChatFab />

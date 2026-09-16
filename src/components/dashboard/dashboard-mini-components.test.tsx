@@ -5,6 +5,22 @@ vi.mock('@/lib/tauri', () => ({
   detectIOSNativeHost: vi.fn(),
 }));
 
+// renderToStaticMarkup 走服务端渲染，而 zustand 在 SSR 下返回的是 store 的初始
+// 状态，无法通过 setState 切换语言。这里显式固定英文（字典的 canonical 语言），
+// 断言里的日期格式也依赖它（en-US）。
+vi.mock('@/lib/i18n/use-i18n', async () => {
+  const { getLanguageMessages, translate } = await import('@/lib/i18n/dictionary');
+  const dictionary = getLanguageMessages('en');
+  return {
+    useI18n: (namespace: keyof typeof dictionary) => ({
+      interfaceLanguage: 'en' as const,
+      messages: dictionary[namespace],
+      t: (key: string, values?: Record<string, string | number>) =>
+        translate('en', namespace as never, key as never, values),
+    }),
+  };
+});
+
 describe('Dashboard mini components', () => {
   it('shows activity context with fluid cells and local calendar dates', async () => {
     const { MiniHeatmap } = await import('./mini-heatmap');

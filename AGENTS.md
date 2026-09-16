@@ -159,7 +159,7 @@ app/
 ├── (app)/favorites/            # Favorites management
 ├── (app)/review/today/         # Daily FSRS review
 ├── (app)/settings/             # AI provider config, TTS, language, etc.
-├── (app)/login/                # Auth login page
+├── (app)/login/                # Phone + SMS OTP sign-in
 └── api/
     ├── chat/route.ts           # AI chat with tool calling
     ├── ai/generate/route.ts    # AI content generation

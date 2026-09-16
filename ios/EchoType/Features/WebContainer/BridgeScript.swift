@@ -167,33 +167,17 @@ enum BridgeScript {
       const applyNativeAuthCallback = (urlString) => {
         try {
           const url = new URL(urlString);
-          const flow = url.searchParams.get('flow');
-          if (flow === 'provider-oauth') {
-            const callbackUrl = new URL('/settings', window.location.origin);
-            for (const key of ['auth_error', 'auth_provider', 'auth_code', 'auth_state']) {
-              const value = url.searchParams.get(key);
-              if (value) {
-                callbackUrl.searchParams.set(key, value);
-              }
+          // 原生回调现在只服务于 AI 提供商 OAuth。账号登录已改为手机号验证码，
+          // 是纯应用内流程，不会有浏览器回跳。
+          if (url.searchParams.get('flow') !== 'provider-oauth') return;
+
+          const callbackUrl = new URL('/settings', window.location.origin);
+          for (const key of ['auth_error', 'auth_provider', 'auth_code', 'auth_state']) {
+            const value = url.searchParams.get(key);
+            if (value) {
+              callbackUrl.searchParams.set(key, value);
             }
-            window.location.assign(callbackUrl.toString());
-            return;
           }
-
-          const next = url.searchParams.get('next') || '/dashboard';
-          const code = url.searchParams.get('code');
-          const authError = url.searchParams.get('error');
-          if (authError) {
-            const callbackUrl = new URL('/login', window.location.origin);
-            callbackUrl.searchParams.set('auth_error', authError);
-            window.location.assign(callbackUrl.toString());
-            return;
-          }
-          if (!code) return;
-
-          const callbackUrl = new URL('/auth/callback', window.location.origin);
-          callbackUrl.searchParams.set('code', code);
-          callbackUrl.searchParams.set('next', next);
           window.location.assign(callbackUrl.toString());
         } catch (error) {
           console.error('Failed to apply native auth callback', error);

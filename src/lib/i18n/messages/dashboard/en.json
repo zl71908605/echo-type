@@ -31,10 +31,42 @@
       "description": "Typing practice"
     }
   },
-  "autoLanguageNotice": {
-    "title": "Interface language matched your browser",
-    "description": "StepUp is currently using {{language}} because that matches your browser. You can change it any time in Settings.",
-    "cta": "Review language settings"
+  "iosHome": {
+    "moreEyebrow": "More",
+    "quickAccess": "Quick access",
+    "pills": {
+      "streak": "{{count}} day streak",
+      "sessions": "{{count}} sessions logged",
+      "items": "{{count}} learning items"
+    },
+    "actions": {
+      "library": {
+        "label": "Library",
+        "description": "{{count}} items"
+      },
+      "favorites": {
+        "label": "Favorites",
+        "description": "Saved words"
+      },
+      "import": {
+        "label": "Import",
+        "description": "Add content"
+      },
+      "weakSpots": {
+        "label": "Weak Spots",
+        "description": "Goal focus",
+        "descriptionFallback": "Practice gaps"
+      },
+      "analytics": {
+        "label": "Analytics",
+        "description": "{{count}} sessions",
+        "descriptionFallback": "Progress trends"
+      },
+      "settings": {
+        "label": "Settings",
+        "description": "AI and voice"
+      }
+    }
   },
   "aiSetup": {
     "title": "No AI model configured yet",

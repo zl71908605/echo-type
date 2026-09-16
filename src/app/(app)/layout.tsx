@@ -13,7 +13,6 @@ import { ShadowReadingStatusBar } from '@/components/shared/shadow-reading-statu
 import { useShortcuts } from '@/hooks/use-shortcuts';
 import { handleNativeNavigation, navigateApp } from '@/lib/app-navigation';
 import { LOCAL_DATABASE_CHANGED_EVENT } from '@/lib/db';
-import { I18nProvider } from '@/lib/i18n/provider';
 import { hydrateIOSNativeQA } from '@/lib/ios-native-qa';
 import { reconcileLearningUnits } from '@/lib/learning-unit-repository';
 import { seedDatabase } from '@/lib/seed';
@@ -239,53 +238,51 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   return (
-    <I18nProvider>
-      <div
-        className={
-          isIOSNativeHost
-            ? 'flex h-screen overflow-hidden bg-[linear-gradient(180deg,#f8fbff_0%,#eef4ff_48%,#f7f9fc_100%)]'
-            : 'flex h-screen overflow-hidden bg-slate-50'
-        }
-      >
-        {/* Backdrop - only visible on mobile when sidebar open */}
-        {sidebarOpen && !isIOSNativeHost && (
-          <div
-            className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity duration-200"
-            onClick={() => setSidebarOpen(false)}
-            aria-hidden="true"
-          />
-        )}
-        {!isIOSNativeHost && <Sidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />}
-        <SelectionTranslationProvider>
-          <main
-            className={isIOSNativeHost ? 'relative flex-1 overflow-y-auto overflow-x-hidden' : 'flex-1 overflow-y-auto'}
-            data-native-host={isIOSNativeHost ? 'ios' : 'web'}
-            data-seeded={seeded}
-          >
-            {isIOSNativeHost && (
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.12),_transparent_68%)]"
-              />
-            )}
-            <ShadowReadingStatusBar />
-            {!isIOSNativeHost && <MobileMenuButton onClick={() => setSidebarOpen(true)} />}
+    <div
+      className={
+        isIOSNativeHost
+          ? 'flex h-screen overflow-hidden bg-[linear-gradient(180deg,#f8fbff_0%,#eef4ff_48%,#f7f9fc_100%)]'
+          : 'flex h-screen overflow-hidden bg-slate-50'
+      }
+    >
+      {/* Backdrop - only visible on mobile when sidebar open */}
+      {sidebarOpen && !isIOSNativeHost && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity duration-200"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+      {!isIOSNativeHost && <Sidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />}
+      <SelectionTranslationProvider>
+        <main
+          className={isIOSNativeHost ? 'relative flex-1 overflow-y-auto overflow-x-hidden' : 'flex-1 overflow-y-auto'}
+          data-native-host={isIOSNativeHost ? 'ios' : 'web'}
+          data-seeded={seeded}
+        >
+          {isIOSNativeHost && (
             <div
-              className={
-                isIOSNativeHost
-                  ? 'relative min-h-full px-4 pt-[calc(env(safe-area-inset-top,0px)+3.5rem)] pb-[calc(env(safe-area-inset-bottom,0px)+7.5rem)] md:px-5'
-                  : 'min-h-full px-6 pt-16 pb-6 md:p-8'
-              }
-            >
-              {seeded && <LearningSectionNav />}
-              {seeded ? children : null}
-            </div>
-          </main>
-        </SelectionTranslationProvider>
-        <ChatFab />
-        <ShadowReadingCompletion />
-        <CommandPalette open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
-      </div>
-    </I18nProvider>
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.12),_transparent_68%)]"
+            />
+          )}
+          <ShadowReadingStatusBar />
+          {!isIOSNativeHost && <MobileMenuButton onClick={() => setSidebarOpen(true)} />}
+          <div
+            className={
+              isIOSNativeHost
+                ? 'relative min-h-full px-4 pt-[calc(env(safe-area-inset-top,0px)+3.5rem)] pb-[calc(env(safe-area-inset-bottom,0px)+7.5rem)] md:px-5'
+                : 'min-h-full px-6 pt-16 pb-6 md:p-8'
+            }
+          >
+            {seeded && <LearningSectionNav />}
+            {seeded ? children : null}
+          </div>
+        </main>
+      </SelectionTranslationProvider>
+      <ChatFab />
+      <ShadowReadingCompletion />
+      <CommandPalette open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
+    </div>
   );
 }

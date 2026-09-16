@@ -1,40 +1,39 @@
 import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { create } from 'zustand';
 import { switchDatabaseForUser } from '@/lib/db';
+import {
+  clearDevLoginSession,
+  DEV_LOGIN_OTP,
+  DEV_LOGIN_PHONE_E164,
+  DEV_LOGIN_USER,
+  DEV_LOGIN_USER_ID,
+  isDevLoginPhone,
+  readDevLoginSession,
+  writeDevLoginSession,
+} from '@/lib/dev-login';
+import { INVALID_OTP_ERROR, INVALID_PHONE_ERROR, isValidPhone, normalizePhone } from '@/lib/phone';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
-import { IOS_NATIVE_AUTH_CALLBACK_URL, IS_IOS_NATIVE_HOST, IS_NATIVE_HOST, IS_TAURI } from '@/lib/tauri';
 import { useSyncStore } from '@/stores/sync-store';
-
-type OAuthProvider = 'google' | 'github';
 
 interface AuthState {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   isConfigured: boolean;
-  oauthLoading: boolean;
-  oauthProvider: OAuthProvider | null;
-  oauthError: string | null;
-  emailAuthLoading: boolean;
-  emailAuthError: string | null;
-  emailOtpSent: boolean;
-  pendingEmail: string | null;
+  phoneAuthLoading: boolean;
+  phoneAuthError: string | null;
+  phoneOtpSent: boolean;
+  pendingPhone: string | null;
   initialize: () => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
-  signInWithGitHub: () => Promise<void>;
-  signInWithEmail: (email: string) => Promise<void>;
-  verifyEmailOtp: (email: string, token: string) => Promise<boolean>;
-  resetEmailAuth: () => void;
+  signInWithPhone: (phone: string) => Promise<boolean>;
+  verifyPhoneOtp: (phone: string, token: string) => Promise<boolean>;
+  resetPhoneAuth: () => void;
   signOut: () => Promise<void>;
 }
 
 let initialized = false;
 let initializePromise: Promise<void> | null = null;
 let authSubscription: { unsubscribe: () => void } | null = null;
-let oauthPollingTimer: ReturnType<typeof setInterval> | null = null;
-let oauthFocusHandler: (() => void) | null = null;
-let oauthCancelTimer: ReturnType<typeof setTimeout> | null = null;
 let lastSyncedUserId: string | null = null;
 
 function syncAfterAuthentication(user: User | null) {
@@ -45,6 +44,25 @@ function syncAfterAuthentication(user: User | null) {
   if (lastSyncedUserId === user.id) return;
   lastSyncedUserId = user.id;
   void useSyncStore.getState().triggerFullSync();
+}
+
+/**
+ * 建立本地开发会话：写标记 → 切库 → 落 state。
+ *
+ * 必须先切库再暴露 user，与真实登录路径语义一致（settings 页的注释也强调了这一点：
+ * 若先暴露用户，下一个渲染周期可能读到上一个用户的库）。
+ *
+ * 刻意不调用 `syncAfterAuthentication`：本地开发身份没有云端用户，同步既无意义，
+ * 又有把真实账号数据拉进开发库的风险。
+ */
+async function establishDevSession(): Promise<void> {
+  writeDevLoginSession();
+  await switchDatabaseForUser(DEV_LOGIN_USER_ID);
+  useAuthStore.setState({
+    user: DEV_LOGIN_USER,
+    isAuthenticated: true,
+    isLoading: false,
+  });
 }
 
 async function resolveInitialUser(supabase: NonNullable<ReturnType<typeof createClient>>): Promise<User | null> {
@@ -68,174 +86,69 @@ async function resolveInitialUser(supabase: NonNullable<ReturnType<typeof create
   return session?.user ?? null;
 }
 
-async function signInWithOAuthForTauri(provider: OAuthProvider): Promise<string> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!supabaseUrl || !supabaseKey) throw new Error('Auth service not configured');
-
-  const exchangeId = crypto.randomUUID();
-
-  const tempClient = createSupabaseClient(supabaseUrl, supabaseKey, {
-    auth: { flowType: 'implicit' },
-  });
-
-  const { data, error } = await tempClient.auth.signInWithOAuth({
-    provider,
-    options: {
-      skipBrowserRedirect: true,
-      redirectTo: `${window.location.origin}/auth/desktop-callback?exchange_id=${exchangeId}`,
-    },
-  });
-  if (error) throw error;
-  if (!data?.url) throw new Error('No auth URL returned');
-
-  const { open } = await import('@tauri-apps/plugin-shell');
-  try {
-    // The shell plugin normally delegates to the system browser. Keep a
-    // timeout because a broken native permission can otherwise leave the
-    // login button spinning forever with no feedback.
-    await Promise.race([
-      open(data.url),
-      new Promise<never>((_, reject) => {
-        window.setTimeout(() => reject(new Error('Timed out opening the system browser')), 5000);
-      }),
-    ]);
-  } catch (error) {
-    // Older bundles or restricted installations may not expose shell:open.
-    // Let the WebView/browser handle the URL as a usable fallback.
-    const opened = window.open(data.url, '_blank', 'noopener,noreferrer');
-    if (!opened) throw error;
-  }
-
-  return exchangeId;
-}
-
-function getHostedOAuthRedirect(): string {
-  if (IS_IOS_NATIVE_HOST) {
-    return IOS_NATIVE_AUTH_CALLBACK_URL;
-  }
-  return `${window.location.origin}/auth/callback`;
-}
-
-function startOAuthPolling(exchangeId: string, set: (state: Partial<AuthState>) => void) {
-  stopOAuthPolling();
-  let attempts = 0;
-  const maxAttempts = 120;
-
-  // Returning to the app after closing the system browser is the only native
-  // signal available for a cancelled OAuth flow. Give the normal one-second
-  // poll a chance to observe a successful callback first, then clear the
-  // spinner immediately when no session handoff arrived.
-  oauthFocusHandler = () => {
-    if (oauthCancelTimer) clearTimeout(oauthCancelTimer);
-    oauthCancelTimer = setTimeout(() => {
-      stopOAuthPolling();
-      set({ oauthLoading: false, oauthProvider: null, oauthError: null });
-    }, 1500);
-  };
-  window.addEventListener('focus', oauthFocusHandler);
-
-  oauthPollingTimer = setInterval(async () => {
-    attempts++;
-    if (attempts > maxAttempts) {
-      stopOAuthPolling();
-      set({ oauthLoading: false, oauthError: 'Login timed out. Please try again.' });
-      return;
-    }
-
-    try {
-      const res = await fetch(`/api/auth/session-exchange?id=${exchangeId}`);
-      if (!res.ok) return;
-
-      const data = await res.json();
-      if (!data.found) return;
-
-      stopOAuthPolling();
-
-      const supabase = createClient();
-      if (!supabase) {
-        set({ oauthLoading: false, oauthProvider: null, oauthError: 'Auth service not configured' });
-        return;
-      }
-
-      const { error } = await supabase.auth.setSession({
-        access_token: data.accessToken,
-        refresh_token: data.refreshToken,
-      });
-
-      if (error) {
-        set({ oauthLoading: false, oauthProvider: null, oauthError: error.message });
-      } else {
-        set({ oauthLoading: false, oauthProvider: null });
-      }
-    } catch {
-      // Network error, keep polling
-    }
-  }, 1000);
-}
-
-function stopOAuthPolling() {
-  if (oauthPollingTimer) {
-    clearInterval(oauthPollingTimer);
-    oauthPollingTimer = null;
-  }
-  if (oauthFocusHandler) {
-    window.removeEventListener('focus', oauthFocusHandler);
-    oauthFocusHandler = null;
-  }
-  if (oauthCancelTimer) {
-    clearTimeout(oauthCancelTimer);
-    oauthCancelTimer = null;
-  }
-}
-
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isLoading: true,
   isAuthenticated: false,
   isConfigured: false,
-  oauthLoading: false,
-  oauthProvider: null,
-  oauthError: null,
-  emailAuthLoading: false,
-  emailAuthError: null,
-  emailOtpSent: false,
-  pendingEmail: null,
+  phoneAuthLoading: false,
+  phoneAuthError: null,
+  phoneOtpSent: false,
+  pendingPhone: null,
 
   initialize: async () => {
     if (initialized) return;
     if (initializePromise) return initializePromise;
 
     initializePromise = (async () => {
-      if (!isSupabaseConfigured()) {
+      const configured = isSupabaseConfigured();
+      const supabase = createClient();
+
+      // 订阅先于开发会话早退建立：这样开发登出后立刻用真实账号登录，能在同一次页面
+      // 生命周期内生效，不需要重置 initialized。
+      if (supabase) {
+        set({ isConfigured: true });
+
+        if (!authSubscription) {
+          const {
+            data: { subscription },
+          } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
+            // 开发会话期间忽略一切真实 auth 事件（INITIAL_SESSION / 无 cookie 的 null
+            // session / 旧 cookie 的 SIGNED_IN / TOKEN_REFRESHED），否则本地开发身份会被冲掉。
+            // 闸门读的是事件发生时刻的标记位，所以 signOut 清掉标记后真实事件立刻恢复生效。
+            if (readDevLoginSession()) return;
+
+            void switchDatabaseForUser(session?.user?.id ?? null).then(() => {
+              set({
+                user: session?.user ?? null,
+                isAuthenticated: !!session?.user,
+                isLoading: false,
+              });
+              syncAfterAuthentication(session?.user ?? null);
+            });
+          });
+          authSubscription = subscription;
+        }
+      }
+
+      // 开发会话恢复：在触碰 Supabase 之前早退，不走 getUser、不触发云同步。
+      if (readDevLoginSession()) {
+        await switchDatabaseForUser(DEV_LOGIN_USER_ID);
+        set({
+          user: DEV_LOGIN_USER,
+          isAuthenticated: true,
+          isLoading: false,
+          isConfigured: configured,
+        });
         initialized = true;
-        set({ isLoading: false, isConfigured: false });
         return;
       }
 
-      const supabase = createClient();
+      // 未配置 Supabase 且无开发会话：维持原有纯离线行为。
       if (!supabase) {
         initialized = true;
         set({ isLoading: false, isConfigured: false });
         return;
-      }
-
-      set({ isConfigured: true });
-
-      if (!authSubscription) {
-        const {
-          data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
-          void switchDatabaseForUser(session?.user?.id ?? null).then(() => {
-            set({
-              user: session?.user ?? null,
-              isAuthenticated: !!session?.user,
-              isLoading: false,
-            });
-            syncAfterAuthentication(session?.user ?? null);
-          });
-        });
-        authSubscription = subscription;
       }
 
       const user = await resolveInitialUser(supabase);
@@ -262,123 +175,97 @@ export const useAuthStore = create<AuthState>((set) => ({
     return initializePromise;
   },
 
-  signInWithGoogle: async () => {
-    const supabase = createClient();
-    if (!supabase) {
-      set({ oauthError: 'Auth service not configured' });
-      return;
+  signInWithPhone: async (phone: string) => {
+    // 开发号码判定放在 isValidPhone 之前：固定号码是常量，不该被格式校验挡掉，
+    // 且命中时完全跳过 Supabase（不发短信、无需网络）。
+    if (isDevLoginPhone(phone)) {
+      set({ phoneAuthLoading: false, phoneAuthError: null, phoneOtpSent: true, pendingPhone: DEV_LOGIN_PHONE_E164 });
+      return true;
     }
-    set({ oauthLoading: true, oauthProvider: 'google', oauthError: null });
-    try {
-      if (IS_TAURI) {
-        const exchangeId = await signInWithOAuthForTauri('google');
-        startOAuthPolling(exchangeId, set);
-      } else {
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            skipBrowserRedirect: true,
-            redirectTo: getHostedOAuthRedirect(),
-          },
-        });
-        if (error) throw error;
-        if (data?.url) {
-          if (IS_NATIVE_HOST && window.EchoTypeNative?.openExternal) {
-            window.EchoTypeNative.openExternal({ url: data.url });
-          } else {
-            window.location.assign(data.url);
-          }
-        }
-      }
-    } catch (e) {
-      set({
-        oauthLoading: false,
-        oauthProvider: null,
-        oauthError: e instanceof Error ? e.message : 'OAuth sign-in failed',
-      });
-    }
-  },
 
-  signInWithGitHub: async () => {
-    const supabase = createClient();
-    if (!supabase) {
-      set({ oauthError: 'Auth service not configured' });
-      return;
+    if (!isValidPhone(phone)) {
+      set({ phoneAuthLoading: false, phoneAuthError: INVALID_PHONE_ERROR });
+      return false;
     }
-    set({ oauthLoading: true, oauthProvider: 'github', oauthError: null });
-    try {
-      if (IS_TAURI) {
-        const exchangeId = await signInWithOAuthForTauri('github');
-        startOAuthPolling(exchangeId, set);
-      } else {
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: 'github',
-          options: {
-            skipBrowserRedirect: true,
-            redirectTo: getHostedOAuthRedirect(),
-          },
-        });
-        if (error) throw error;
-        if (data?.url) {
-          if (IS_NATIVE_HOST && window.EchoTypeNative?.openExternal) {
-            window.EchoTypeNative.openExternal({ url: data.url });
-          } else {
-            window.location.assign(data.url);
-          }
-        }
-      }
-    } catch (e) {
-      set({
-        oauthLoading: false,
-        oauthProvider: null,
-        oauthError: e instanceof Error ? e.message : 'OAuth sign-in failed',
-      });
-    }
-  },
 
-  signInWithEmail: async (email: string) => {
-    set({ emailAuthLoading: true, emailAuthError: null });
+    set({ phoneAuthLoading: true, phoneAuthError: null });
     const supabase = createClient();
     if (!supabase) {
-      set({ emailAuthLoading: false, emailAuthError: 'Auth service not configured' });
-      return;
+      set({ phoneAuthLoading: false, phoneAuthError: 'Auth service not configured' });
+      return false;
     }
+
+    const normalized = normalizePhone(phone);
     const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { shouldCreateUser: true },
+      phone: normalized,
+      options: { channel: 'sms', shouldCreateUser: true },
     });
-    if (error) {
-      set({ emailAuthLoading: false, emailAuthError: error.message });
-    } else {
-      set({ emailAuthLoading: false, emailOtpSent: true, pendingEmail: email });
-    }
-  },
 
-  verifyEmailOtp: async (email: string, token: string) => {
-    set({ emailAuthLoading: true, emailAuthError: null });
-    const supabase = createClient();
-    if (!supabase) {
-      set({ emailAuthLoading: false, emailAuthError: 'Auth service not configured' });
-      return false;
-    }
-    const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
     if (error) {
-      set({ emailAuthLoading: false, emailAuthError: error.message });
+      set({ phoneAuthLoading: false, phoneAuthError: error.message });
       return false;
     }
-    set({ emailAuthLoading: false, emailOtpSent: false, pendingEmail: null });
+
+    set({ phoneAuthLoading: false, phoneOtpSent: true, pendingPhone: normalized });
     return true;
   },
 
-  resetEmailAuth: () => {
-    set({ emailAuthLoading: false, emailAuthError: null, emailOtpSent: false, pendingEmail: null });
+  verifyPhoneOtp: async (phone: string, token: string) => {
+    if (isDevLoginPhone(phone)) {
+      if (token !== DEV_LOGIN_OTP) {
+        set({ phoneAuthLoading: false, phoneAuthError: INVALID_OTP_ERROR });
+        return false;
+      }
+
+      set({ phoneAuthLoading: true, phoneAuthError: null });
+      await establishDevSession();
+      set({ phoneAuthLoading: false, phoneOtpSent: false, pendingPhone: null });
+      return true;
+    }
+
+    set({ phoneAuthLoading: true, phoneAuthError: null });
+    const supabase = createClient();
+    if (!supabase) {
+      set({ phoneAuthLoading: false, phoneAuthError: 'Auth service not configured' });
+      return false;
+    }
+
+    const { error } = await supabase.auth.verifyOtp({ phone, token, type: 'sms' });
+    if (error) {
+      set({ phoneAuthLoading: false, phoneAuthError: error.message });
+      return false;
+    }
+
+    set({ phoneAuthLoading: false, phoneOtpSent: false, pendingPhone: null });
+    return true;
+  },
+
+  resetPhoneAuth: () => {
+    set({ phoneAuthLoading: false, phoneAuthError: null, phoneOtpSent: false, pendingPhone: null });
   },
 
   signOut: async () => {
+    // 本地开发会话没有云端会话，必须在 Supabase 早退之前清掉，否则未配置 Supabase 时
+    // 点「退出登录」不会有任何反应（旧实现在这里直接 return）。
+    clearDevLoginSession();
+    lastSyncedUserId = null;
+
     const supabase = createClient();
-    if (!supabase) return;
-    await supabase.auth.signOut();
+    if (supabase) {
+      try {
+        await supabase.auth.signOut();
+      } catch (error) {
+        console.warn('Supabase sign-out failed; clearing the local session anyway.', error);
+      }
+    }
+
     await switchDatabaseForUser(null);
-    set({ user: null, isAuthenticated: false });
+    set({
+      user: null,
+      isAuthenticated: false,
+      phoneOtpSent: false,
+      pendingPhone: null,
+      phoneAuthError: null,
+    });
   },
 }));

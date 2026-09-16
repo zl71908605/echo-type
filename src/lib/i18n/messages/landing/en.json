@@ -1,0 +1,42 @@
+{
+  "nav": {
+    "signIn": "Sign In",
+    "startLearning": "Start Learning"
+  },
+  "ios": {
+    "badge": "English Practice Hub",
+    "title": "Learn English in one calm, focused daily flow",
+    "description": "Switch between listen, speak, read, write and review without leaving your practice context. StepUp keeps every exercise, note and AI hint in one place.",
+    "openDashboard": "Open Dashboard",
+    "trySpeaking": "Try Speaking"
+  },
+  "web": {
+    "titleLine1": "Master English Through",
+    "titleLine2": "Immersive Practice",
+    "description": "Listen, speak, read, and write — with AI-powered feedback at every step. Import your own content and master English through immersive practice.",
+    "cta": "Get Started Free"
+  },
+  "features": {
+    "listen": {
+      "title": "Listen",
+      "description": "Listen to English articles, phrases, sentences, and words with adjustable speed and interactive transcripts."
+    },
+    "speak": {
+      "title": "Speak",
+      "description": "Practice speaking with real-time speech recognition and get color-coded pronunciation feedback."
+    },
+    "read": {
+      "title": "Read",
+      "description": "Read English articles with interactive translation, word collection, and comprehension tracking."
+    },
+    "write": {
+      "title": "Write",
+      "description": "Practice typing English with real-time error correction, WPM tracking, and spaced repetition."
+    },
+    "aiTutor": {
+      "title": "AI Tutor",
+      "description": "Chat with an AI English tutor that knows your learning context and helps you improve."
+    }
+  },
+  "footer": "StepUp — Learn English by doing. Built with Next.js, Vercel AI SDK, and Web Speech API."
+}

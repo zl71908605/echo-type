@@ -1,0 +1,42 @@
+{
+  "nav": {
+    "signIn": "登录",
+    "startLearning": "开始学习"
+  },
+  "ios": {
+    "badge": "英语练习中心",
+    "title": "每天专注一点点，轻松学好英语",
+    "description": "听力、口语、阅读、写作与复习自由切换，不必离开当前练习。小步把每一次练习、笔记和 AI 提示都放在同一个地方。",
+    "openDashboard": "进入首页",
+    "trySpeaking": "试试口语"
+  },
+  "web": {
+    "titleLine1": "沉浸式练习",
+    "titleLine2": "真正掌握英语",
+    "description": "听、说、读、写全面覆盖，每一步都有 AI 反馈。导入你自己的内容，在沉浸式练习中掌握英语。",
+    "cta": "免费开始"
+  },
+  "features": {
+    "listen": {
+      "title": "听力",
+      "description": "收听英文文章、短语、句子和单词，可调节语速，并配有可交互的字幕。"
+    },
+    "speak": {
+      "title": "口语",
+      "description": "用实时语音识别练习口语，获得按颜色标注的发音反馈。"
+    },
+    "read": {
+      "title": "阅读",
+      "description": "阅读英文文章，支持即点即译、收藏单词和理解度跟踪。"
+    },
+    "write": {
+      "title": "写作",
+      "description": "练习英文打字，实时纠错、统计 WPM，并结合间隔重复复习。"
+    },
+    "aiTutor": {
+      "title": "AI 导师",
+      "description": "和了解你学习情况的 AI 英语导师对话，帮你持续进步。"
+    }
+  },
+  "footer": "小步 StepUp — 在实践中学习英语。由 Next.js、Vercel AI SDK 与 Web Speech API 驱动。"
+}

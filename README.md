@@ -65,7 +65,7 @@ All content is tagged, searchable, and can be practiced in any module. AI can al
 
 | **Dashboard** | View daily plan, progress stats, recent sessions, streaks | Track your learning journey at a glance |
 | **Spaced Repetition** | FSRS-based smart review reminders | Review words and phrases at the scientifically optimal time |
-| **Cloud Sync** | Sign in with Google or GitHub | Sync progress, library, and settings across devices |
+| **Cloud Sync** | Sign in with your phone number | Sync progress, library, and settings across devices |
 | **Keyboard Shortcuts** | Fully customizable keybindings, command palette (Cmd+K) | Navigate and control everything without touching the mouse |
 
 ## Getting Started

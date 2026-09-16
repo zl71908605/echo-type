@@ -6,6 +6,7 @@ import { contentListMessages } from './messages/content-list';
 import { dashboardMessages } from './messages/dashboard';
 import { favoritesMessages } from './messages/favorites';
 import { journalMessages } from './messages/journal';
+import { landingMessages } from './messages/landing';
 import { libraryMessages } from './messages/library';
 import { loginMessages } from './messages/login';
 import { modulesMessages } from './messages/modules';
@@ -31,6 +32,7 @@ export const messages = {
   modules: modulesMessages,
   settings: settingsMessages,
   speak: speakMessages,
+  landing: landingMessages,
   library: libraryMessages,
   login: loginMessages,
   review: reviewMessages,

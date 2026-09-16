@@ -1,88 +1,54 @@
 'use client';
 
-import { ArrowLeft, ArrowRight, Loader2, Mail } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, Smartphone } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 import { IOS_PAGE_CONTAINER_CLASS, IOS_SECTION_CARD_CLASS } from '@/components/shared/ios-native-ui';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DEV_LOGIN_OTP, DEV_LOGIN_PHONE, IS_DEV_LOGIN_ENABLED } from '@/lib/dev-login';
 import { useI18n } from '@/lib/i18n/use-i18n';
+import { INVALID_OTP_ERROR, INVALID_PHONE_ERROR, PHONE_COUNTRY_CODE } from '@/lib/phone';
 import { detectIOSNativeHost } from '@/lib/tauri';
 import { useAuthStore } from '@/stores/auth-store';
 
-function GoogleIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" aria-label="Google">
-      <path
-        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
-        fill="#4285F4"
-      />
-      <path
-        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-        fill="#34A853"
-      />
-      <path
-        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-        fill="#FBBC05"
-      />
-      <path
-        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-        fill="#EA4335"
-      />
-    </svg>
-  );
-}
-
-function GitHubIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-label="GitHub">
-      <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0 0 22 12.017C22 6.484 17.522 2 12 2z" />
-    </svg>
-  );
-}
+/** 与 Supabase 对同一手机号的发送冷却保持一致，避免重发按钮直接撞上限流。 */
+const RESEND_COOLDOWN_SECONDS = 60;
 
 export default function LoginPage() {
-  return (
-    <Suspense>
-      <LoginContent />
-    </Suspense>
-  );
-}
-
-function LoginContent() {
   const isIOSNativeHost = detectIOSNativeHost();
   const {
-    signInWithGoogle,
-    signInWithGitHub,
-    signInWithEmail,
-    verifyEmailOtp,
-    resetEmailAuth,
+    signInWithPhone,
+    verifyPhoneOtp,
+    resetPhoneAuth,
     isAuthenticated,
-    oauthLoading,
-    oauthProvider,
-    oauthError,
-    emailAuthLoading,
-    emailAuthError,
-    emailOtpSent,
-    pendingEmail,
+    phoneAuthLoading,
+    phoneAuthError,
+    phoneOtpSent,
+    pendingPhone,
   } = useAuthStore();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const authError = searchParams.get('auth_error');
   const { t } = useI18n('login');
 
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const getLocalizedError = (error: string | null): string => {
     if (!error) return t('authFailed');
+    if (error === INVALID_PHONE_ERROR) return t('errorInvalidPhone');
+    if (error === INVALID_OTP_ERROR) return t('errorInvalidOtp');
     const lower = error.toLowerCase();
-    if (lower.includes('sending') && lower.includes('email')) return t('errorSendingEmail');
-    if (lower.includes('rate limit')) return t('errorRateLimit');
+    if (lower.includes('rate limit') || lower.includes('too many')) return t('errorRateLimit');
+    if (lower.includes('disabled') || lower.includes('not configured') || lower.includes('unsupported')) {
+      return t('errorSmsUnavailable');
+    }
+    if (lower.includes('phone') && lower.includes('invalid')) return t('errorInvalidPhone');
     if (lower.includes('invalid') || lower.includes('expired')) return t('errorInvalidOtp');
-    return error;
+    if (lower.includes('sms') || lower.includes('sending')) return t('errorSendingSms');
+    return t('authFailed');
   };
 
   useEffect(() => {
@@ -92,13 +58,47 @@ function LoginContent() {
   }, [isAuthenticated, router]);
 
   useEffect(() => {
-    return () => resetEmailAuth();
-  }, [resetEmailAuth]);
+    return () => resetPhoneAuth();
+  }, [resetPhoneAuth]);
 
-  const handleEmailSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (phoneOtpSent) setResendCooldown(RESEND_COOLDOWN_SECONDS);
+  }, [phoneOtpSent]);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setTimeout(() => setResendCooldown((seconds) => seconds - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
+
+  const handlePhoneSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
-    signInWithEmail(email.trim());
+    if (!phone.trim()) return;
+    void signInWithPhone(phone);
+  };
+
+  const handleResend = () => {
+    if (!pendingPhone || resendCooldown > 0) return;
+    setOtpDigits(['', '', '', '', '', '']);
+    void signInWithPhone(pendingPhone);
+    otpInputRefs.current[0]?.focus();
+  };
+
+  const submitOtp = (digits: string[]) => {
+    verifyPhoneOtp(pendingPhone!, digits.join('')).then((ok) => {
+      if (ok) router.replace('/dashboard');
+    });
+  };
+
+  /** 开发环境：一键填入固定凭据。验证码步骤没有提交按钮（靠 6 格填满自动提交），所以要显式触发。 */
+  const handleFillDevCredentials = () => {
+    if (phoneOtpSent) {
+      const digits = DEV_LOGIN_OTP.split('');
+      setOtpDigits(digits);
+      submitOtp(digits);
+      return;
+    }
+    setPhone(DEV_LOGIN_PHONE);
   };
 
   const handleOtpChange = (index: number, value: string) => {
@@ -113,9 +113,7 @@ function LoginContent() {
       otpInputRefs.current[nextIndex]?.focus();
 
       if (newDigits.every((d) => d !== '')) {
-        verifyEmailOtp(pendingEmail!, newDigits.join('')).then((ok) => {
-          if (ok) router.replace('/dashboard');
-        });
+        submitOtp(newDigits);
       }
       return;
     }
@@ -130,9 +128,7 @@ function LoginContent() {
     }
 
     if (newDigits.every((d) => d !== '')) {
-      verifyEmailOtp(pendingEmail!, newDigits.join('')).then((ok) => {
-        if (ok) router.replace('/dashboard');
-      });
+      submitOtp(newDigits);
     }
   };
 
@@ -143,7 +139,7 @@ function LoginContent() {
   };
 
   const handleBack = () => {
-    resetEmailAuth();
+    resetPhoneAuth();
     setOtpDigits(['', '', '', '', '', '']);
   };
 
@@ -161,18 +157,18 @@ function LoginContent() {
             <span className="text-2xl font-bold text-white">E</span>
           </div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-            {emailOtpSent ? t('checkEmail') : t('title')}
+            {phoneOtpSent ? t('checkPhone') : t('title')}
           </h1>
           <p className="mt-2 text-sm text-slate-500">
-            {emailOtpSent ? (
+            {phoneOtpSent ? (
               <>
-                {t('otpSentTo')} <span className="font-medium text-slate-700">{pendingEmail}</span>
+                {t('otpSentTo')} <span className="font-medium text-slate-700">{pendingPhone}</span>
               </>
             ) : (
               t('subtitle')
             )}
           </p>
-          {emailOtpSent && <p className="mt-1 text-xs text-slate-400">{t('otpHint')}</p>}
+          {phoneOtpSent && <p className="mt-1 text-xs text-slate-400">{t('otpHint')}</p>}
         </div>
 
         <div
@@ -182,13 +178,13 @@ function LoginContent() {
               : 'rounded-2xl border border-slate-200 bg-white p-6 shadow-sm'
           }
         >
-          {(authError || emailAuthError || oauthError) && (
+          {phoneAuthError && (
             <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {getLocalizedError(emailAuthError || oauthError)}
+              {getLocalizedError(phoneAuthError)}
             </div>
           )}
 
-          {emailOtpSent ? (
+          {phoneOtpSent ? (
             <div className="space-y-5">
               <div className="flex justify-center gap-2">
                 {otpDigits.map((digit, i) => (
@@ -204,19 +200,17 @@ function LoginContent() {
                     onChange={(e) => handleOtpChange(i, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(i, e)}
                     className="h-12 w-11 rounded-lg border border-slate-200 bg-slate-50 text-center text-lg font-semibold text-slate-900 outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-                    disabled={emailAuthLoading}
+                    disabled={phoneAuthLoading}
                   />
                 ))}
               </div>
 
-              {emailAuthLoading ? (
+              {phoneAuthLoading ? (
                 <div className="flex items-center justify-center gap-2 text-sm text-slate-500">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   {t('verifying')}
                 </div>
-              ) : (
-                <p className="text-center text-xs text-slate-400">{t('checkSpam')}</p>
-              )}
+              ) : null}
 
               <div className="flex items-center justify-between text-sm">
                 <button
@@ -229,93 +223,56 @@ function LoginContent() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setOtpDigits(['', '', '', '', '', '']);
-                    signInWithEmail(pendingEmail!);
-                    otpInputRefs.current[0]?.focus();
-                  }}
-                  disabled={emailAuthLoading}
-                  className="text-indigo-600 hover:text-indigo-700 font-medium transition-colors cursor-pointer disabled:opacity-50"
+                  onClick={handleResend}
+                  disabled={phoneAuthLoading || resendCooldown > 0}
+                  className="text-indigo-600 hover:text-indigo-700 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-default"
                 >
-                  {t('resendCode')}
+                  {resendCooldown > 0 ? t('resendIn', { seconds: resendCooldown }) : t('resendCode')}
                 </button>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  variant="outline"
-                  className="h-11 gap-2 text-sm font-medium cursor-pointer"
-                  onClick={() => signInWithGoogle()}
-                  disabled={oauthLoading}
-                >
-                  {oauthLoading && oauthProvider === 'google' ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <GoogleIcon className="h-4 w-4" />
-                  )}
-                  Google
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-11 gap-2 text-sm font-medium cursor-pointer"
-                  onClick={() => signInWithGitHub()}
-                  disabled={oauthLoading}
-                >
-                  {oauthLoading && oauthProvider === 'github' ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <GitHubIcon className="h-4 w-4" />
-                  )}
-                  GitHub
-                </Button>
-              </div>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-slate-200" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-3 text-slate-400">{t('orContinueWith')}</span>
-                </div>
-              </div>
-
-              <form onSubmit={handleEmailSubmit} className="space-y-3">
+              <form onSubmit={handlePhoneSubmit} className="space-y-3">
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1.5">
-                    {t('emailLabel')}
+                  <label htmlFor="phone" className="block text-sm font-medium text-slate-700 mb-1.5">
+                    {t('phoneLabel')}
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <span className="pointer-events-none absolute left-9 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-500">
+                      {PHONE_COUNTRY_CODE}
+                    </span>
                     <Input
-                      id="email"
-                      type="email"
-                      aria-label="Email"
-                      data-testid="login-email-input"
-                      placeholder={t('emailPlaceholder')}
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-9 h-11"
+                      id="phone"
+                      type="tel"
+                      inputMode="numeric"
+                      autoComplete="tel-national"
+                      aria-label="Phone"
+                      data-testid="login-phone-input"
+                      placeholder={t('phonePlaceholder')}
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value.replace(/[^\d\s]/g, ''))}
+                      className="pl-[4.5rem] h-11"
                       required
-                      disabled={emailAuthLoading}
+                      disabled={phoneAuthLoading}
                     />
                   </div>
                 </div>
                 <Button
                   type="submit"
                   className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-medium cursor-pointer"
-                  disabled={emailAuthLoading || !email.trim()}
-                  data-testid="login-email-submit"
+                  disabled={phoneAuthLoading || !phone.trim()}
+                  data-testid="login-phone-submit"
                 >
-                  {emailAuthLoading ? (
+                  {phoneAuthLoading ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       {t('sendingCode')}
                     </>
                   ) : (
                     <>
-                      {t('continueWithEmail')}
+                      {t('continueWithPhone')}
                       <ArrowRight className="h-4 w-4" />
                     </>
                   )}
@@ -327,6 +284,23 @@ function LoginContent() {
                   {t('continueWithout')}
                 </Link>
               </div>
+            </div>
+          )}
+
+          {IS_DEV_LOGIN_ENABLED && (
+            <div
+              data-testid="dev-login-hint"
+              className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800"
+            >
+              <p className="font-semibold">{t('devLoginTitle')}</p>
+              <p className="mt-1">{t('devLoginHint', { phone: DEV_LOGIN_PHONE, code: DEV_LOGIN_OTP })}</p>
+              <button
+                type="button"
+                onClick={handleFillDevCredentials}
+                className="mt-2 font-medium text-amber-900 underline underline-offset-2 cursor-pointer"
+              >
+                {t('devLoginFill')}
+              </button>
             </div>
           )}
         </div>

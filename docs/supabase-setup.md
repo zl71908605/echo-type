@@ -230,13 +230,27 @@ CREATE TRIGGER update_profiles_updated_at
 
 ---
 
-## 第 6 步：验证
+## 第 6 步：配置手机号登录
 
-1. 重启开发服务器后，侧边栏底部应显示 **Sign In** 按钮（而非 "v1.0 · Local"）
-2. 点击 Sign In → 选择 Google 或 GitHub 登录
+账号登录使用 **手机号 + 短信验证码**，不需要写额外的应用代码，但必须在 Dashboard 里接通短信通道：
+
+1. **Authentication → Providers → Phone**：启用 Phone provider。
+2. **Authentication → Providers → Phone → SMS Provider**：选择并填写 Twilio / MessageBird / Vonage / Textlocal 的凭据。
+   > Supabase 内置只支持这四家。若要接阿里云 / 腾讯云等国内短信服务，需要在
+   > **Authentication → Hooks → Send SMS Hook** 里指向一个自建的 HTTP 端点。
+   > 在短信通道接通之前，登录页会正常展示，但点击「获取验证码」会返回错误提示。
+3. 如果开启了 **Attack Protection** 的 CAPTCHA，注意它对 phone 同样生效，`signInWithOtp` 会因缺少 captcha token 被拒绝。
+
+登录页固定使用中国大陆国家码 `+86`（见 `src/lib/phone.ts`）。需要支持其他地区时，
+把 `PHONE_COUNTRY_CODE` 换成国家码选择器，并让 `isValidPhone` 按国家码分支即可。
+
+## 第 7 步：验证
+
+1. 重启开发服务器后，侧边栏底部应显示 **登录** 按钮（而非 "v1.0 · Local"）
+2. 点击登录 → 输入手机号 → 获取验证码 → 填写短信中的 6 位验证码
 3. 登录成功后：
-   - 侧边栏显示你的头像和名字
-   - Settings → Account 显示邮箱和同步开关
+   - 侧边栏显示你的手机号
+   - Settings → Account 显示手机号和同步开关
    - 开启同步后数据每 30 秒自动增量同步
 
 ---
@@ -251,22 +265,50 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 ```
 
-### OAuth 回调 URL
+### 短信通道
 
-生产环境需要在 Google/GitHub OAuth 设置中添加生产域名的回调 URL：
-```
-https://your-project.supabase.co/auth/v1/callback
+数据库之外还有一处生产配置：**Authentication → Providers → Phone → SMS Provider**
+需要填写可用的短信服务商凭据，否则线上环境无法发送验证码。
+
+手机号登录是纯应用内流程，不需要配置任何 OAuth Redirect URL。
+
+> 项目里保留的 `/api/auth/callback` 与 `/api/auth/token` 属于 **AI 提供商** OAuth
+> （见 `src/lib/oauth.ts`），与账号登录无关。
+
+---
+
+## 开发环境登录
+
+短信通道接通前，或在完全没有配置 Supabase 的本机上，可以用开发环境登录进入 Dashboard：
+
+```env
+# .env.development.local —— 注意不要写进 .env.local
+NEXT_PUBLIC_ENABLE_DEV_LOGIN=true
 ```
 
-并在 Supabase Dashboard → **Authentication** → **URL Configuration** 中添加：
-- **Site URL:** `https://echo-type.app`
-- **Redirect URLs:**
-  - `https://echo-type.app/auth/callback`（Web 端 OAuth 回调）
-  - `https://echo-type.app/auth/desktop-callback`（桌面端 OAuth 回调）
-  - `http://localhost:3000/auth/callback`（本地开发）
-  - `http://localhost:3000/auth/desktop-callback`（本地桌面开发）
-  - `http://127.0.0.1:54576/auth/desktop-callback`（桌面安装包默认回调）
-  - `http://localhost:54576/auth/desktop-callback`（桌面安装包兼容回调）
+**为什么必须是 `.env.development.local`**：Next.js 的加载顺序是 `process.env` →
+`.env.$(NODE_ENV).local` → `.env.local` → `.env.$(NODE_ENV)` → `.env`。`next build` 不会读
+`.env.development.local`，但**会读 `.env.local`**——开关写进 `.env.local` 会让本地生产构建
+也带上开发登录。
+
+改动开关后**必须重启 `pnpm dev`**：`NEXT_PUBLIC_*` 是构建期内联的，不会热更新。
+
+开启后：
+
+- 登录页出现琥珀色的「开发环境登录」区块，固定手机号 `13800138000`、固定验证码 `123456`，
+  点「填入开发账号」自动填好（见 `src/lib/dev-login.ts`）。
+- 该号码**不走 Supabase、不发短信**，直接建立一个本地会话，因此没有配置 Supabase 也能用。
+- 其他手机号仍走真实短信流程。
+
+### 需要知道的行为
+
+| 行为 | 说明 |
+|------|------|
+| 独立数据库 | 开发会话切到 `echotype:user:dev-local-user`，是**独立的空库**，看不到匿名库的学习进度。首次登录会新建并播种，略有耗时。 |
+| 登出方式 | 侧边栏头像 → 退出登录。开发会话下会一并清掉可能存在的真实 Supabase 会话，保证登出后状态确定。 |
+| 云同步 | 开发会话期间同步被强制停用（`sync-store.ts` 的 `getCurrentUserId` 会直接返回 null），不会把真实账号的数据拉进开发库。 |
+| 不要用真实号码 | `DEV_LOGIN_PHONE` 若改成正在使用的真实号码，该号码在开发环境将永远收不到真实短信。 |
+| 生产安全 | 开关未设置时，固定号码会正常走真实路径；生产构建里该常量为 false，运行时无法篡改。 |
 
 ---
 
@@ -275,7 +317,10 @@ https://your-project.supabase.co/auth/v1/callback
 | 问题 | 解决方案 |
 |------|---------|
 | 页面报 "Your project's URL and Key are required" | 检查 `.env.local` 是否正确配置并重启 dev server |
-| OAuth 登录后跳转到空白页 | 检查 Supabase Dashboard 的 Redirect URLs 是否包含 `http://localhost:3000/auth/callback` 和 `http://localhost:3000/auth/desktop-callback` |
+| 点击「获取验证码」报 "Phone signups are disabled" | 在 Supabase Dashboard → Authentication → Providers 中启用 Phone provider |
+| 点击「获取验证码」报 "Error sending sms" | SMS Provider 凭据未配置或无效，检查 Authentication → Providers → Phone |
+| 收不到验证码 | 确认是有效的 11 位大陆号码（`1[3-9]` 开头），并确认短信通道已接通 |
+| 开发环境登录区块不出现 | 确认开关在 `.env.development.local` 且值为 `true`，然后**重启** dev server（`NEXT_PUBLIC_*` 是构建期内联的） |
 | 同步失败 "Not authenticated" | 确认已登录，检查 Supabase session 是否过期 |
 | 数据未同步 | 检查 Settings → Account 中同步是否已启用 |
 | RLS 错误 | 确认 SQL 中的 RLS policies 已正确创建 |

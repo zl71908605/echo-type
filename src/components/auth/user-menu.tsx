@@ -12,26 +12,35 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { navigateApp } from '@/lib/app-navigation';
+import { IS_DEV_LOGIN_ENABLED } from '@/lib/dev-login';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { useAuthStore } from '@/stores/auth-store';
 
 function getInitials(name?: string | null): string {
   if (!name) return 'ET';
-  const parts = name.trim().split(/\s+/);
+  const trimmed = name.trim();
+  const digits = trimmed.replace(/\D/g, '');
+  // 手机号（如 +8613800138000）取末两位，比截出 "+8" 有意义
+  if (digits.length >= 4 && !/[a-z]/i.test(trimmed)) {
+    return digits.slice(-2);
+  }
+  const parts = trimmed.split(/\s+/);
   if (parts.length >= 2) {
     return (parts[0][0] + parts[1][0]).toUpperCase();
   }
-  return name.slice(0, 2).toUpperCase();
+  return trimmed.slice(0, 2).toUpperCase();
 }
 
 function getDisplayName(
-  user: { user_metadata?: Record<string, unknown>; email?: string } | null,
+  user: { user_metadata?: Record<string, unknown>; email?: string; phone?: string } | null,
   fallbackUser: string,
 ): string {
   if (!user) return 'StepUp';
   const meta = user.user_metadata;
   if (meta?.full_name && typeof meta.full_name === 'string') return meta.full_name;
   if (meta?.name && typeof meta.name === 'string') return meta.name;
+  // 手机号登录的用户没有 OAuth metadata，手机号就是唯一可读的标识
+  if (user.phone) return user.phone;
   if (user.email) return user.email.split('@')[0];
   return fallbackUser;
 }
@@ -71,8 +80,9 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
     );
   }
 
-  // Not configured (local-only mode) — hide entirely
-  if (!isConfigured) {
+  // Not configured (local-only mode) — hide entirely.
+  // 例外：开启开发登录时必须保留入口，否则开发手机号无从输入，登录后也无法登出。
+  if (!isConfigured && !IS_DEV_LOGIN_ENABLED) {
     return null;
   }
 
@@ -154,7 +164,7 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
             <div className="flex-1 min-w-0 text-left">
               <p className="text-xs font-medium text-slate-700 truncate leading-none">{displayName}</p>
               <p className="text-[10px] text-slate-400 truncate leading-none mt-0.5">
-                {user.email ?? accountMessages.signedIn}
+                {user.phone ?? user.email ?? accountMessages.signedIn}
               </p>
             </div>
           </button>
@@ -162,7 +172,9 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent side="top" align={collapsed ? 'center' : 'start'} className="w-56">
-        <DropdownMenuLabel className="text-xs font-normal text-slate-500">{user.email}</DropdownMenuLabel>
+        <DropdownMenuLabel className="text-xs font-normal text-slate-500">
+          {user.phone ?? user.email}
+        </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => navigateApp('/settings', router)}>
           <Settings className="mr-2 h-4 w-4" />

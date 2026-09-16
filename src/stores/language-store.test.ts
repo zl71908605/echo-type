@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { detectInterfaceLanguage, useLanguageStore } from './language-store';
+import { DEFAULT_INTERFACE_LANGUAGE, useLanguageStore } from './language-store';
 
 const storage = new Map<string, string>();
 
@@ -25,32 +25,32 @@ describe('language-store', () => {
   beforeEach(() => {
     storage.clear();
     useLanguageStore.setState({
-      interfaceLanguage: 'en',
+      interfaceLanguage: DEFAULT_INTERFACE_LANGUAGE,
       hasExplicitPreference: false,
       initialized: false,
     });
+  });
 
-    Object.defineProperty(globalThis, 'navigator', {
-      configurable: true,
-      value: { language: 'en-US' },
+  it('defaults to chinese on a fresh visit', () => {
+    useLanguageStore.getState().initialize();
+
+    expect(useLanguageStore.getState()).toMatchObject({
+      interfaceLanguage: 'zh',
+      hasExplicitPreference: false,
+      initialized: true,
     });
   });
 
-  it('detects zh browser locales', () => {
-    expect(detectInterfaceLanguage('zh-CN')).toBe('zh');
-    expect(detectInterfaceLanguage('zh-TW')).toBe('zh');
-  });
-
-  it('defaults to english when browser locale is missing', () => {
-    expect(detectInterfaceLanguage()).toBe('en');
-    expect(detectInterfaceLanguage(null)).toBe('en');
-  });
-
-  it('initializes from browser language when no explicit preference exists', () => {
-    Object.defineProperty(globalThis, 'navigator', {
-      configurable: true,
-      value: { language: 'zh-CN' },
-    });
+  it('does not restore a stored value the user never chose explicitly', () => {
+    // 旧版本会把浏览器检测结果写进 storage（hasExplicitPreference 为 false），
+    // 那不算用户的选择，不应覆盖默认语言。
+    storage.set(
+      'echotype_language_settings',
+      JSON.stringify({
+        interfaceLanguage: 'en',
+        hasExplicitPreference: false,
+      }),
+    );
 
     useLanguageStore.getState().initialize();
 
@@ -62,20 +62,20 @@ describe('language-store', () => {
   });
 
   it('persists explicit user choice', () => {
-    useLanguageStore.getState().setInterfaceLanguage('zh');
+    useLanguageStore.getState().setInterfaceLanguage('en');
 
     expect(useLanguageStore.getState()).toMatchObject({
-      interfaceLanguage: 'zh',
+      interfaceLanguage: 'en',
       hasExplicitPreference: true,
       initialized: true,
     });
     expect(JSON.parse(storage.get('echotype_language_settings') ?? '{}')).toEqual({
-      interfaceLanguage: 'zh',
+      interfaceLanguage: 'en',
       hasExplicitPreference: true,
     });
   });
 
-  it('uses explicit stored preference instead of browser detection', () => {
+  it('uses the stored explicit preference over the default', () => {
     storage.set(
       'echotype_language_settings',
       JSON.stringify({
@@ -83,10 +83,6 @@ describe('language-store', () => {
         hasExplicitPreference: true,
       }),
     );
-    Object.defineProperty(globalThis, 'navigator', {
-      configurable: true,
-      value: { language: 'zh-CN' },
-    });
 
     useLanguageStore.getState().initialize();
 
@@ -97,12 +93,8 @@ describe('language-store', () => {
     });
   });
 
-  it('ignores malformed storage and falls back to browser detection', () => {
+  it('ignores malformed storage and falls back to the default language', () => {
     storage.set('echotype_language_settings', '{bad json');
-    Object.defineProperty(globalThis, 'navigator', {
-      configurable: true,
-      value: { language: 'zh-CN' },
-    });
 
     useLanguageStore.getState().initialize();
 

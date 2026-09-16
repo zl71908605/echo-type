@@ -203,9 +203,19 @@ final class NativeNavigationUITests: XCTestCase {
 
         XCTAssertTrue(app.buttons["native-back-button"].waitForExistence(timeout: launchTimeout))
         assertCurrentURLContains(app, path: "/")
-        assertStaticTextContains(app, fragment: "Learn English in one calm, focused daily flow")
-        XCTAssertTrue(app.links["Open Dashboard"].waitForExistence(timeout: launchTimeout))
-        XCTAssertTrue(app.links["Try Speaking"].waitForExistence(timeout: launchTimeout))
+        // 界面默认中文，接受中英两种文案以免与语言设置耦合。
+        XCTAssertTrue(
+            app.staticTexts["每天专注一点点，轻松学好英语"].waitForExistence(timeout: launchTimeout)
+                || app.staticTexts["Learn English in one calm, focused daily flow"].waitForExistence(timeout: launchTimeout)
+        )
+        XCTAssertTrue(
+            app.links["进入首页"].waitForExistence(timeout: launchTimeout)
+                || app.links["Open Dashboard"].waitForExistence(timeout: launchTimeout)
+        )
+        XCTAssertTrue(
+            app.links["试试口语"].waitForExistence(timeout: launchTimeout)
+                || app.links["Try Speaking"].waitForExistence(timeout: launchTimeout)
+        )
     }
 
     @MainActor
@@ -216,37 +226,17 @@ final class NativeNavigationUITests: XCTestCase {
         XCTAssertTrue(app.buttons["native-back-button"].waitForExistence(timeout: launchTimeout))
         assertCurrentURLContains(app, path: "/login")
         XCTAssertTrue(
-            app.staticTexts["Sign in to EchoType"].waitForExistence(timeout: launchTimeout)
-                || app.staticTexts["登录 EchoType"].waitForExistence(timeout: launchTimeout)
+            app.staticTexts["登录小步"].waitForExistence(timeout: launchTimeout)
+                || app.staticTexts["Sign in to StepUp"].waitForExistence(timeout: launchTimeout)
         )
-        XCTAssertTrue(app.textFields["Email"].waitForExistence(timeout: launchTimeout))
+        XCTAssertTrue(app.textFields["Phone"].waitForExistence(timeout: launchTimeout))
+        let phone = app.textFields["login-phone-input"]
+        XCTAssertTrue(phone.waitForExistence(timeout: launchTimeout))
+        phone.tap()
+        phone.typeText("13800138000")
         XCTAssertTrue(
-            app.buttons["Continue with Email"].waitForExistence(timeout: launchTimeout)
-                || app.buttons["使用邮箱继续"].waitForExistence(timeout: launchTimeout)
-                || app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "Continue")).firstMatch.waitForExistence(timeout: launchTimeout)
-        )
-        let email = app.textFields["login-email-input"]
-        XCTAssertTrue(email.waitForExistence(timeout: launchTimeout))
-        email.tap()
-        email.typeText("qa@example.com")
-        XCTAssertTrue(
-            app.buttons["login-email-submit"].waitForExistence(timeout: launchTimeout)
-                || app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "Continue")).firstMatch.waitForExistence(timeout: launchTimeout)
-        )
-    }
-
-    @MainActor
-    func testDesktopCallbackPageRendersErrorStateInNativeShell() throws {
-        let app = makeApp(initialPath: "/auth/desktop-callback")
-        app.launch()
-
-        XCTAssertTrue(app.buttons["native-back-button"].waitForExistence(timeout: launchTimeout))
-        assertCurrentURLContains(app, path: "/auth/desktop-callback")
-        XCTAssertTrue(app.staticTexts["Login failed"].waitForExistence(timeout: launchTimeout))
-        XCTAssertTrue(
-            app.staticTexts["No tokens received"].waitForExistence(timeout: launchTimeout)
-                || app.staticTexts["Missing exchange ID"].waitForExistence(timeout: launchTimeout)
-                || app.staticTexts["Failed to complete sign-in"].waitForExistence(timeout: launchTimeout)
+            app.buttons["login-phone-submit"].waitForExistence(timeout: launchTimeout)
+                || app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "Send Code")).firstMatch.waitForExistence(timeout: launchTimeout)
         )
     }
 

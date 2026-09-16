@@ -31,10 +31,42 @@
       "description": "打字练习"
     }
   },
-  "autoLanguageNotice": {
-    "title": "界面语言已匹配你的浏览器",
-    "description": "小步当前使用 {{language}} 界面，因为这与你的浏览器语言一致。你可以随时在设置中修改。",
-    "cta": "查看语言设置"
+  "iosHome": {
+    "moreEyebrow": "更多",
+    "quickAccess": "快捷入口",
+    "pills": {
+      "streak": "连续 {{count}} 天",
+      "sessions": "{{count}} 次练习",
+      "items": "{{count}} 个学习内容"
+    },
+    "actions": {
+      "library": {
+        "label": "资料库",
+        "description": "{{count}} 项内容"
+      },
+      "favorites": {
+        "label": "收藏",
+        "description": "已收藏的单词"
+      },
+      "import": {
+        "label": "导入",
+        "description": "添加内容"
+      },
+      "weakSpots": {
+        "label": "薄弱点",
+        "description": "目标聚焦",
+        "descriptionFallback": "练习盲区"
+      },
+      "analytics": {
+        "label": "数据统计",
+        "description": "{{count}} 次练习",
+        "descriptionFallback": "进度趋势"
+      },
+      "settings": {
+        "label": "设置",
+        "description": "AI 与语音"
+      }
+    }
   },
   "aiSetup": {
     "title": "尚未配置 AI 模型",
