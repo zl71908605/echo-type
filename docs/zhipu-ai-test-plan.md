@@ -1,8 +1,8 @@
-# EchoType ZhiPu AI (GLM) 功能测试文档
+# StepUp ZhiPu AI (GLM) 功能测试文档
 
 ## 测试目标
 
-将 EchoType 应用切换到 Z.AI (智谱) 作为 AI 提供商，使用 `.env.local` 中配置的 `ZAI_API_KEY`，全面测试所有 AI 相关功能。
+将 StepUp 应用切换到 Z.AI (智谱) 作为 AI 提供商，使用 `.env.local` 中配置的 `ZAI_API_KEY`，全面测试所有 AI 相关功能。
 
 ## 测试环境
 

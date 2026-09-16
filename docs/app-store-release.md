@@ -1,6 +1,6 @@
-# EchoType Mac App Store 发布指南
+# StepUp Mac App Store 发布指南
 
-本文档说明如何把当前基于 Tauri v2 的 EchoType 桌面版发布到 Mac App Store。
+本文档说明如何把当前基于 Tauri v2 的 StepUp 桌面版发布到 Mac App Store。
 
 截至 2026-03-17，这个仓库已经可以：
 
@@ -14,7 +14,7 @@
 
 适用于：
 
-- 通过 Mac App Store 发布 EchoType 的 macOS 桌面版
+- 通过 Mac App Store 发布 StepUp 的 macOS 桌面版
 - 当前仓库里的 Tauri v2 工程：`src-tauri/`
 - 当前的 `Next.js standalone + Node sidecar` 架构
 
@@ -88,10 +88,10 @@
 
 Apple 当前流程要求你在第一次上传前，先在 App Store Connect 创建 App 记录。
 
-EchoType 建议这样填：
+StepUp 建议这样填：
 
 - Platform: `macOS`
-- Name: `EchoType`
+- Name: `StepUp`
 - Primary Language: 你的主语言
 - Bundle ID: `com.echotype.desktop`
 - SKU: 例如 `echotype-mac`
@@ -133,7 +133,7 @@ EchoType 建议这样填：
       "entitlements": "./Entitlements.plist",
       "minimumSystemVersion": "12.0",
       "files": {
-        "embedded.provisionprofile": "/absolute/path/to/EchoType.provisionprofile",
+        "embedded.provisionprofile": "/absolute/path/to/StepUp.provisionprofile",
         "Info.plist": "./Info.plist"
       }
     }
@@ -168,14 +168,14 @@ Tauri 官方的 App Store 指南明确要求补充 `Info.plist`，尤其是出�
 </plist>
 ```
 
-对 EchoType，还建议你评估并补齐这些隐私描述键：
+对 StepUp，还建议你评估并补齐这些隐私描述键：
 
 - `NSMicrophoneUsageDescription`
 - `NSSpeechRecognitionUsageDescription`
 
 原因：
 
-- EchoType 有听说练习能力
+- StepUp 有听说练习能力
 - 仓库依赖了 `react-speech-recognition`
 - Mac App Store 审核通常会关注麦克风和语音识别权限说明
 
@@ -214,7 +214,7 @@ Mac App Store 应用必须启用 App Sandbox，并声明所需 capability。
 
 把里面的 `TEAM_ID` 换成你自己的 Apple Team ID。
 
-对 EchoType，这里至少要重点评估：
+对 StepUp，这里至少要重点评估：
 
 - `com.apple.security.network.client`
   因为 Tauri WebView 需要访问本地启动的 `http://127.0.0.1:<port>` sidecar 服务
@@ -259,7 +259,7 @@ Mac App Store 应用必须启用 App Sandbox，并声明所需 capability。
 
 Tauri 官方文档明确提醒，提交前一定要验证应用在 App Sandbox 中能正常工作。
 
-EchoType 至少要做这些回归：
+StepUp 至少要做这些回归：
 
 1. 应用能启动
 2. Node sidecar 能启动
@@ -317,9 +317,9 @@ Mac App Store 最终上传的通常不是 `.app`，而是签名后的 `.pkg`。
 ```bash
 xcrun productbuild \
   --sign "3rd Party Mac Developer Installer: YOUR TEAM" \
-  --component "src-tauri/target/universal-apple-darwin/release/bundle/macos/EchoType.app" \
+  --component "src-tauri/target/universal-apple-darwin/release/bundle/macos/StepUp.app" \
   /Applications \
-  "EchoType.pkg"
+  "StepUp.pkg"
 ```
 
 如果你不是 universal 构建，请按实际产物路径调整。
@@ -338,7 +338,7 @@ xcrun productbuild \
 xcrun altool \
   --upload-app \
   --type macos \
-  --file "EchoType.pkg" \
+  --file "StepUp.pkg" \
   --apiKey "$APPLE_API_KEY_ID" \
   --apiIssuer "$APPLE_API_ISSUER"
 ```
@@ -375,7 +375,7 @@ xcrun altool \
 7. 如果需要，先走 TestFlight / 内部测试
 8. 提交审核
 
-## 针对 EchoType 的首发检查清单
+## 针对 StepUp 的首发检查清单
 
 - 已创建 App Store Connect App 记录
 - 已创建显式 App ID

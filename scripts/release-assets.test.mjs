@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { selectUpdaterAssets } from './release-assets.mjs';
 
-const names = ['EchoType.app.tar.gz', 'EchoType_1.4.0_amd64.AppImage', 'EchoType_1.4.0_x64-setup.exe'];
+const names = ['StepUp.app.tar.gz', 'StepUp_1.4.0_amd64.AppImage', 'StepUp_1.4.0_x64-setup.exe'];
 const assets = names.flatMap((name) => [{ name }, { name: `${name}.sig` }]);
 
 test('selects signed Tauri v2 native installers for all shipped architectures', () => {

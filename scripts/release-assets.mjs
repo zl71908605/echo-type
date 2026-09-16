@@ -2,9 +2,9 @@
 // The macOS job builds ARM only: never advertise that binary to Intel Macs.
 export function selectUpdaterAssets(assets, version) {
   const names = {
-    'darwin-aarch64': 'EchoType.app.tar.gz',
-    'linux-x86_64': `EchoType_${version}_amd64.AppImage`,
-    'windows-x86_64': `EchoType_${version}_x64-setup.exe`,
+    'darwin-aarch64': 'StepUp.app.tar.gz',
+    'linux-x86_64': `StepUp_${version}_amd64.AppImage`,
+    'windows-x86_64': `StepUp_${version}_x64-setup.exe`,
   };
   return Object.fromEntries(
     Object.entries(names).map(([platform, name]) => {

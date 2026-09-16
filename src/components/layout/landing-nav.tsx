@@ -2,10 +2,22 @@
 
 import { LogIn } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect } from 'react';
+import { LogoMark } from '@/components/brand/logo';
+import { BRAND } from '@/lib/brand';
 import { useAuthStore } from '@/stores/auth-store';
+import { useLanguageStore } from '@/stores/language-store';
 
 export function LandingNav() {
   const { isAuthenticated, isLoading, user } = useAuthStore();
+  const zh = useLanguageStore((state) => state.interfaceLanguage) === 'zh';
+  const initializeLanguage = useLanguageStore((state) => state.initialize);
+
+  // landing 不在 (app) 路由组内，没有 I18nProvider 触发语言检测，
+  // 不初始化的话品牌名会一直停留在默认的英文。
+  useEffect(() => {
+    initializeLanguage();
+  }, [initializeLanguage]);
 
   const displayName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '';
   const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
@@ -16,15 +28,15 @@ export function LandingNav() {
         .join('')
         .toUpperCase()
         .slice(0, 2)
-    : 'ET';
+    : 'SU';
 
   return (
     <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-4 sm:px-8">
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-          <span className="text-white font-bold text-sm">E</span>
-        </div>
-        <span className="text-xl font-bold text-indigo-900 font-[var(--font-poppins)]">EchoType</span>
+      <div className="flex items-center gap-2.5">
+        <LogoMark size={32} />
+        <span className="text-xl font-bold text-indigo-900 font-[var(--font-brand)]">
+          {zh ? BRAND.nameZh : BRAND.nameEn}
+        </span>
       </div>
       <div className="flex items-center gap-2 sm:gap-3">
         {isLoading ? (

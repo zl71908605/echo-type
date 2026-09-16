@@ -248,7 +248,7 @@ src/app/api/tools/classify/route.ts  # 添加 baseUrl 支持
 ## ✅ 结论
 
 ### 集成成功
-Ollama 已成功集成到 EchoType 应用中，所有基础功能正常工作。
+Ollama 已成功集成到 StepUp 应用中，所有基础功能正常工作。
 
 ### 功能完整
 - ✅ UI 配置完善

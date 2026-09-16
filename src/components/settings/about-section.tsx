@@ -1,6 +1,7 @@
 'use client';
 
-import { AlertCircle, ExternalLink, Info, Loader2, RefreshCw, ShieldCheck, Zap } from 'lucide-react';
+import { AlertCircle, ExternalLink, Info, Loader2, RefreshCw, ShieldCheck } from 'lucide-react';
+import { LogoMark } from '@/components/brand/logo';
 import { Section } from '@/components/settings/section';
 import {
   IOS_EYEBROW_CLASS,
@@ -10,6 +11,7 @@ import {
   IOS_TINTED_SUBCARD_CLASS,
 } from '@/components/shared/ios-native-ui';
 import { Button } from '@/components/ui/button';
+import { brandName } from '@/lib/brand';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { IS_IOS_NATIVE_HOST, IS_TAURI } from '@/lib/tauri';
 import { APP_VERSION } from '@/lib/version';
@@ -65,10 +67,10 @@ function UpdateButton() {
 }
 
 export function AboutSection() {
-  const { messages } = useI18n('settings');
+  const { messages, interfaceLanguage } = useI18n('settings');
   const platformLabel = IS_TAURI ? 'Tauri v2' : IS_IOS_NATIVE_HOST ? 'Native iOS Host' : 'Web';
   const infoRows = [
-    { label: messages.about.application, value: 'EchoType' },
+    { label: messages.about.application, value: brandName(interfaceLanguage) },
     { label: messages.about.version, value: `v${APP_VERSION}` },
     { label: messages.about.techStack, value: 'Next.js + React + TypeScript' },
     { label: messages.about.dataStorage, value: messages.about.localIndexedDbAndCloudSync },
@@ -82,13 +84,11 @@ export function AboutSection() {
           className={IS_IOS_NATIVE_HOST ? `${IOS_TINTED_SUBCARD_CLASS} px-5 py-5` : 'rounded-2xl bg-slate-50 px-5 py-5'}
         >
           <div className="flex items-start gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[22px] bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-200/70">
-              <Zap className="h-7 w-7 text-white" />
-            </div>
+            <LogoMark size={56} className="shadow-lg shadow-indigo-200/70" />
             <div className="min-w-0 flex-1">
               {IS_IOS_NATIVE_HOST ? <p className={IOS_EYEBROW_CLASS}>App profile</p> : null}
               <div className="mt-1 flex items-center gap-2">
-                <h3 className="text-lg font-bold text-slate-900">EchoType</h3>
+                <h3 className="text-lg font-bold text-slate-900">{brandName(interfaceLanguage)}</h3>
                 <span className={IOS_PILL_CLASS}>v{APP_VERSION}</span>
               </div>
               <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">{messages.about.appDescription}</p>

@@ -1,6 +1,6 @@
-# EchoType Vercel 部署文档
+# StepUp Vercel 部署文档
 
-本文档基于当前仓库代码整理，目标是把 EchoType 以 `Next.js + Vercel Functions` 的方式部署到线上，并明确哪些功能可以直接上线，哪些功能在 Vercel 上需要额外改造。
+本文档基于当前仓库代码整理，目标是把 StepUp 以 `Next.js + Vercel Functions` 的方式部署到线上，并明确哪些功能可以直接上线，哪些功能在 Vercel 上需要额外改造。
 
 ## 1. 当前项目适合怎样部署
 
@@ -169,7 +169,7 @@ if (ytDlpPath) {
 
 1. 点击 `Add New...`
 2. 选择 `Project`
-3. 选择 EchoType 对应仓库
+3. 选择 StepUp 对应仓库
 4. 进入 Import 页面
 
 ### 5.2 Build 设置
@@ -438,7 +438,7 @@ pnpm dlx vercel --prod
 
 ## 13. 推荐的下一步改造
 
-如果你希望 EchoType 在 Vercel 上完整支持“媒体导入”相关能力，优先做这三件事：
+如果你希望 StepUp 在 Vercel 上完整支持“媒体导入”相关能力，优先做这三件事：
 
 1. 把本地媒体上传改成对象存储上传
 2. 把 `yt-dlp` 下载能力迁移到独立 Worker / 后端
@@ -446,7 +446,7 @@ pnpm dlx vercel --prod
 
 ## 14. 结论
 
-EchoType 当前可以按“主站 + AI API”模式稳定部署到 Vercel，但要明确边界：
+StepUp 当前可以按“主站 + AI API”模式稳定部署到 Vercel，但要明确边界：
 
 - 纯 Next.js 页面、AI Chat、AI 生成、Whisper 转写：适合部署
 - 本地二进制下载、持久媒体存储、本地模型服务：不适合按当前实现直接部署

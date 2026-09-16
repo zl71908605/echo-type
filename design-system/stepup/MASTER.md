@@ -6,7 +6,7 @@
 
 ---
 
-**Project:** EchoType
+**Project:** StepUp
 **Generated:** 2026-02-26 22:47:43
 **Category:** SaaS (General)
 

@@ -1,4 +1,4 @@
-# EchoType macOS 无需 Apple 账号的打包与安装
+# StepUp macOS 无需 Apple 账号的打包与安装
 
 这条流程用于：
 
@@ -20,8 +20,8 @@ pnpm tauri:build:unsigned
 
 默认产物位置：
 
-- `src-tauri/target/release/bundle/macos/EchoType.app`
-- `src-tauri/target/release/bundle/dmg/EchoType_0.1.0_aarch64.dmg`
+- `src-tauri/target/release/bundle/macos/StepUp.app`
+- `src-tauri/target/release/bundle/dmg/StepUp_0.1.0_aarch64.dmg`
 
 ## 自动 release 打包
 
@@ -90,7 +90,7 @@ TAURI_BUNDLED_NODE_PATH=/absolute/path/to/node pnpm tauri:build:unsigned
 
 直接打开：
 
-- `src-tauri/target/release/bundle/macos/EchoType.app`
+- `src-tauri/target/release/bundle/macos/StepUp.app`
 
 或者挂载 DMG 后把应用拖进 `Applications`。
 
@@ -105,7 +105,7 @@ TAURI_BUNDLED_NODE_PATH=/absolute/path/to/node pnpm tauri:build:unsigned
 3. 或者在终端移除隔离属性：
 
 ```bash
-xattr -dr com.apple.quarantine /Applications/EchoType.app
+xattr -dr com.apple.quarantine /Applications/StepUp.app
 ```
 
 ## 当前限制

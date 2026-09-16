@@ -41,6 +41,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { buildActivityHeatmapData, buildReviewForecast, buildStreakData } from '@/lib/analytics';
 import { db } from '@/lib/db';
+import { brandName } from '@/lib/brand';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { detectIOSNativeHost, nativeHaptic, reportNativeQAState } from '@/lib/tauri';
 import { useAssessmentStore } from '@/stores/assessment-store';
@@ -406,7 +407,7 @@ export default function DashboardPage() {
       <TodayWorkspace />
       {isIOSNativeHost ? (
         <IOSPageHeader
-          badge="EchoType"
+          badge={brandName(interfaceLanguage)}
           tone="indigo"
           title={dashboard.header.title}
           description={dashboard.header.subtitle}

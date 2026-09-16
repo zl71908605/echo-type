@@ -1,6 +1,6 @@
 # Ollama 快速使用指南
 
-## 如何在 EchoType 中使用 Ollama
+## 如何在 StepUp 中使用 Ollama
 
 ### 1. 安装和启动 Ollama
 
@@ -16,7 +16,7 @@ ollama pull llama3.2      # 小型快速模型 (1.88 GB)
 ollama pull gemma3:12b    # 中型平衡模型 (7.59 GB)
 ```
 
-### 2. 在 EchoType 中配置
+### 2. 在 StepUp 中配置
 
 1. 打开设置页面 `/settings`
 2. 在 AI Provider 部分，选择 **Local** 分组下的 **Ollama**

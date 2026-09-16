@@ -149,6 +149,9 @@ public/media/
 *.png
 !docs/design/*.png
 !src-tauri/icons/**/*.png
+# iOS app icons：由 `pnpm tauri icon app-icon.svg` 生成后复制过去，
+# 需要纳入版本控制，否则 CI 构建时资源目录里只有 Contents.json
+!ios/EchoType/Resources/Assets.xcassets/AppIcon.appiconset/*.png
 test-results
 .omc/state
 .omc/sessions

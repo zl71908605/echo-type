@@ -1,6 +1,6 @@
 # Supabase 配置指南
 
-本指南帮助你配置 Supabase 以启用 EchoType 的登录认证和云同步功能。
+本指南帮助你配置 Supabase 以启用 StepUp 的登录认证和云同步功能。
 
 > **注意:** Supabase 配置完全可选。未配置时 app 完全离线运行，数据存储在本地 IndexedDB。
 
@@ -62,7 +62,7 @@ pnpm dev
 
 1. 访问 [GitHub Developer Settings](https://github.com/settings/developers) → **OAuth Apps** → **New OAuth App**
 2. 填写：
-   - **Application name:** `EchoType`
+   - **Application name:** `StepUp`
    - **Homepage URL:** `http://localhost:3000`（或你的域名）
    - **Authorization callback URL:**
      ```
@@ -80,7 +80,7 @@ pnpm dev
 
 ```sql
 -- ============================================
--- EchoType Cloud Sync Tables
+-- StepUp Cloud Sync Tables
 -- ============================================
 
 -- 用户 Profile（扩展 auth.users）

@@ -1,10 +1,10 @@
-# EchoType — AGENTS.md
+# StepUp — AGENTS.md
 
 > Core knowledge base for AI agents working on this project.
 
 ## Project Overview
 
-EchoType is an English learning SaaS with four core modules: Listen, Read, Speak, Write, plus AI Chat and Review. Built with Next.js 16 App Router.
+StepUp is an English learning SaaS with four core modules: Listen, Read, Speak, Write, plus AI Chat and Review. Built with Next.js 16 App Router.
 
 ## Tech Stack
 

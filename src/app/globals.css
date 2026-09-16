@@ -51,6 +51,10 @@
 :root {
   --font-poppins: "Poppins", "Avenir Next", "Segoe UI", sans-serif;
   --font-open-sans: "Open Sans", "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  /* 品牌字：中英混排（「小步」/ StepUp），西文走 Poppins，中文回落到系统黑体 */
+  --font-brand:
+    "Poppins", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans SC",
+    "Segoe UI", sans-serif;
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);

@@ -4,7 +4,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-APP_BUNDLE="$PROJECT_DIR/src-tauri/target/debug/bundle/macos/EchoType.app"
+APP_BUNDLE="$PROJECT_DIR/src-tauri/target/debug/bundle/macos/StepUp.app"
 APP_EXECUTABLE="$APP_BUNDLE/Contents/MacOS/echotype"
 DEFAULT_KEY_PATH="$HOME/.tauri/echotype.key"
 
@@ -69,11 +69,11 @@ verify_local_bundle() {
   sleep 5
 
   if pgrep -fl "$APP_EXECUTABLE" >/dev/null 2>&1; then
-    echo "==> EchoType debug bundle launched successfully"
+    echo "==> StepUp debug bundle launched successfully"
     return
   fi
 
-  echo "ERROR: EchoType bundle was built but did not stay running."
+  echo "ERROR: StepUp bundle was built but did not stay running."
   exit 1
 }
 

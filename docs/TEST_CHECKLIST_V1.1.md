@@ -1,4 +1,4 @@
-# EchoType v1.1 Test Checklist
+# StepUp v1.1 Test Checklist
 
 **Branch:** `feature/v1.1-enhancements`
 **Date:** 2026-03-21

@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="app-icon.svg" alt="EchoType" width="80" height="80" />
+  <img src="app-icon.svg" alt="小步" width="80" height="80" />
 </p>
 
-<h1 align="center">EchoType</h1>
+<h1 align="center">小步</h1>
 
 <p align="center">
   听、说、读、写全方位英语学习工具
@@ -26,9 +26,9 @@
 
 ---
 
-## 为什么选择 EchoType？
+## 为什么选择小步？
 
-大多数英语学习工具只专注于单一技能。EchoType 将**听、说、读、写**融合在一个工作流中 —— 用同一份内容练习四项技能，这才是语言学习的正确方式。
+大多数英语学习工具只专注于单一技能。小步将**听、说、读、写**融合在一个工作流中 —— 用同一份内容练习四项技能，这才是语言学习的正确方式。
 
 - 导入任何文章、YouTube 视频或网页作为学习素材
 - 同一份内容可以听、跟读、打字练习，多维度吸收
@@ -70,13 +70,13 @@
 
 ## 快速开始
 
-### 1. 打开 EchoType
+### 1. 打开小步
 
 浏览器访问 [echo-type.app](https://echo-type.app)，或[下载桌面端应用](https://github.com/Talljack/echo-type/releases)。
 
 ### 2. 测试你的英语水平
 
-进入 **设置 > English Level**，做一组 30 道题的快速测试。EchoType 会判断你的 CEFR 等级（A1–C2），并自动调整内容推荐难度。
+进入 **设置 > English Level**，做一组 30 道题的快速测试。小步会判断你的 CEFR 等级（A1–C2），并自动调整内容推荐难度。
 
 ### 3. 配置 AI（可选但推荐）
 
@@ -117,11 +117,11 @@
 
 **想提升发音？** 在 Speak 模块中练习 50+ 真实场景对话，开启 SpeechSuper 获取音素级 IPA 反馈。
 
-**每天读英语新闻？** 粘贴文章 URL，EchoType 自动将它变成听力 + 阅读 + 打字的全方位练习。
+**每天读英语新闻？** 粘贴文章 URL，小步自动将它变成听力 + 阅读 + 打字的全方位练习。
 
 **积累词汇？** 浏览内置单词本（大学、职场、旅行、日常），用 FSRS 间隔重复复习，AI 自动生成测验。
 
-**不知道从哪开始？** 做个水平测试 —— EchoType 会推荐匹配你 CEFR 等级的内容。
+**不知道从哪开始？** 做个水平测试 —— 小步会推荐匹配你 CEFR 等级的内容。
 
 **想自由安排学习节奏？** 所有数据本地存储，无需注册、无需订阅、没有广告。想同步才登录。
 
@@ -129,9 +129,9 @@
 
 | 平台 | 下载 |
 | --- | --- |
-| macOS (Apple Silicon) | `EchoType_<ver>_aarch64.dmg` |
-| Windows | `EchoType_<ver>_x64-setup.exe` |
-| Linux (Debian/Ubuntu) | `EchoType_<ver>_amd64.deb` |
+| macOS (Apple Silicon) | `小步_<ver>_aarch64.dmg` |
+| Windows | `小步_<ver>_x64-setup.exe` |
+| Linux (Debian/Ubuntu) | `小步_<ver>_amd64.deb` |
 
 桌面端支持**系统托盘**（显示/隐藏、快捷导航、退出）、**键盘快捷键**和**自动更新**。
 

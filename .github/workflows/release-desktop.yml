@@ -178,8 +178,8 @@ jobs:
       - name: Package macOS app as zip
         if: runner.os == 'macOS'
         run: |
-          APP_PATH="src-tauri/target/aarch64-apple-darwin/release/bundle/macos/EchoType.app"
-          ZIP_PATH="src-tauri/target/aarch64-apple-darwin/release/bundle/macos/EchoType_${{ steps.release_meta.outputs.version }}_aarch64.zip"
+          APP_PATH="src-tauri/target/aarch64-apple-darwin/release/bundle/macos/StepUp.app"
+          ZIP_PATH="src-tauri/target/aarch64-apple-darwin/release/bundle/macos/StepUp_${{ steps.release_meta.outputs.version }}_aarch64.zip"
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$ZIP_PATH"
 
       - name: Upload macOS assets

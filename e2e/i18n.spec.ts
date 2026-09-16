@@ -16,7 +16,7 @@ test.describe('i18n phase 1', () => {
     `);
     await page.goto('/dashboard');
 
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('欢迎使用 EchoType');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('欢迎使用小步');
     await expect(page.getByText('界面语言已匹配你的浏览器')).toBeVisible();
     await expect(page.getByText('总览', { exact: true })).toBeVisible();
     await expect(page.getByText('今日复习', { exact: true })).toBeVisible();
@@ -53,7 +53,7 @@ test.describe('i18n phase 1', () => {
 
     await page.goto('/dashboard');
 
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Welcome to EchoType');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Welcome to StepUp');
     await expect(page.getByText(/Today's Review|Today's Review/)).toBeVisible();
     await expect(page.getByText('Interface language matched your browser')).toHaveCount(0);
   });

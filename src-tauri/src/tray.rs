@@ -47,7 +47,7 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
 
     TrayIconBuilder::new()
         .icon(icon)
-        .tooltip("EchoType")
+        .tooltip("StepUp")
         .menu(&menu)
         .on_tray_icon_event(move |tray_icon, event| {
             if let tauri::tray::TrayIconEvent::Click {

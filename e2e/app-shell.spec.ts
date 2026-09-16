@@ -16,7 +16,7 @@ test.describe('App Shell & Navigation', () => {
     await expect(sidebar.getByText('Settings')).toBeVisible();
   });
 
-  test('sidebar EchoType logo links to landing', async ({ page }) => {
+  test('sidebar StepUp logo links to landing', async ({ page }) => {
     await page.goto('/dashboard');
     await page.locator('aside a[href="/"]').first().click();
     await expect(page).toHaveURL('/');

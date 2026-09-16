@@ -31,13 +31,13 @@ test.describe('Landing Page', () => {
     await expect(page).toHaveURL(/\/dashboard/);
   });
 
-  test('has EchoType branding in nav', async ({ page }) => {
+  test('has StepUp branding in nav', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('nav').getByText('EchoType')).toBeVisible();
+    await expect(page.locator('nav').getByText('StepUp')).toBeVisible();
   });
 
   test('has footer', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('footer')).toContainText('EchoType');
+    await expect(page.locator('footer')).toContainText('StepUp');
   });
 });

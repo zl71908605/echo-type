@@ -15,14 +15,15 @@ import {
   Settings,
   Volume2,
   X,
-  Zap,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { UserMenu } from '@/components/auth/user-menu';
+import { LogoMark } from '@/components/brand/logo';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { UpdateDialog } from '@/components/updater/update-dialog';
+import { BRAND } from '@/lib/brand';
 import { useI18n } from '@/lib/i18n/use-i18n';
 import { type LearningSection, learningSection, PRIMARY_LEARNING_LINKS } from '@/lib/learning-navigation';
 import { IS_TAURI } from '@/lib/tauri';
@@ -294,13 +295,11 @@ export function Sidebar({ open = false, onOpenChange }: SidebarProps = {}) {
       {/* Logo */}
       <div className={cn('border-b border-slate-100', collapsed ? 'px-2 py-4' : 'px-4 py-4')}>
         <Link href="/" prefetch={false} className="flex items-center gap-2.5 cursor-pointer group">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm shadow-indigo-200 shrink-0">
-            <Zap className="w-4 h-4 text-white" />
-          </div>
+          <LogoMark size={32} />
           {!collapsed && (
             <div>
-              <span className="text-[15px] font-bold text-slate-900 font-[var(--font-poppins)] leading-none block">
-                EchoType
+              <span className="text-[15px] font-bold text-slate-900 font-[var(--font-brand)] leading-none block">
+                {zh ? BRAND.nameZh : BRAND.nameEn}
               </span>
               <span className="text-[10px] text-slate-400 leading-none block mt-0.5 tracking-wide">
                 {messages.logo.subtitle}
