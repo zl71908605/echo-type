@@ -1,109 +1,82 @@
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  createEngineAvailability,
+  type FreeTranslateEngine,
+  translateChunk,
+  UpstreamTranslateError,
+} from '@/lib/free-translate';
 
 const TRANSLATION_CONCURRENCY = 4;
 
-class UpstreamTranslateError extends Error {
-  constructor(
-    message: string,
-    public status: number,
-  ) {
-    super(message);
-    this.name = 'UpstreamTranslateError';
-  }
+interface FreeTranslateBody {
+  text?: string;
+  sentences?: string[];
+  targetLang?: string;
 }
 
 /**
- * Free translation endpoint using Google Translate (unofficial, no API key needed).
- * Used as the default/fallback for selection translation.
+ * Keyless translation endpoint.
+ *
+ * Engine chain: Google Translate (unofficial) → MyMemory. Google is blocked on
+ * some networks and fails by hanging, so MyMemory keeps this endpoint working
+ * without an API key.
+ *
+ * Callers that need the built-in AI as a further fallback should call
+ * `/api/translate`, which resolves the configured provider and its rate limits.
  */
 export async function POST(req: NextRequest) {
   try {
-    const body: { text?: string; sentences?: string[]; targetLang?: string } = await req.json();
-    const { text, sentences, targetLang = 'zh-CN' } = body;
+    const { text, sentences, targetLang = 'zh-CN' }: FreeTranslateBody = await req.json();
 
     if ((!text && (!sentences || sentences.length === 0)) || !targetLang) {
       return NextResponse.json({ error: 'Missing text/sentences or targetLang' }, { status: 400 });
     }
 
-    const normalizedTargetLang = targetLang.replace('-', '_').split('_')[0]!;
+    const availability = createEngineAvailability();
+    const chunks = Array.isArray(sentences) && sentences.length > 0 ? sentences : [text ?? ''];
+    const results = new Array<{ text: string; engine: FreeTranslateEngine } | undefined>(chunks.length);
+    const failures: string[] = [];
 
-    async function translateChunk(chunk: string): Promise<string> {
-      const params = new URLSearchParams({
-        client: 'gtx',
-        sl: 'en',
-        tl: normalizedTargetLang,
-        dt: 't',
-        dj: '1',
-        q: chunk,
-      });
-
-      const url = `https://translate.googleapis.com/translate_a/single?${params}`;
-
-      let res: Response | undefined;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          res = await fetch(url, {
-            headers: { 'User-Agent': 'Mozilla/5.0' },
-            signal: AbortSignal.timeout(5000),
-          });
-          break;
-        } catch (err) {
-          if (attempt === 2) throw err;
-          await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
-        }
-      }
-
-      if (!res) {
-        throw new UpstreamTranslateError('Google Translate unreachable after retries', 502);
-      }
-
-      if (!res.ok) {
-        throw new UpstreamTranslateError(`Google Translate error: ${res.status}`, 502);
-      }
-
-      let data: unknown;
-      try {
-        data = await res.json();
-      } catch {
-        throw new UpstreamTranslateError('Google Translate returned invalid JSON', 502);
-      }
-      const chunkSentences = (data as { sentences?: { trans?: string; orig?: string }[] }).sentences;
-      return (
-        chunkSentences
-          ?.map((s) => s.trans)
-          .filter(Boolean)
-          .join('') || ''
+    for (let start = 0; start < chunks.length; start += TRANSLATION_CONCURRENCY) {
+      const window = chunks.slice(start, start + TRANSLATION_CONCURRENCY);
+      const settled = await Promise.all(
+        window.map(async (chunk, offset) => {
+          try {
+            return { index: start + offset, result: await translateChunk(chunk, targetLang, availability) };
+          } catch (error) {
+            return {
+              index: start + offset,
+              result: undefined,
+              error: error instanceof Error ? error.message : 'Translation failed',
+            };
+          }
+        }),
       );
+
+      for (const { index, result, error } of settled) {
+        results[index] = result;
+        if (error && !failures.includes(error)) failures.push(error);
+      }
     }
+
+    if (results.every((result) => !result)) {
+      return NextResponse.json({ error: failures.join('; ') || 'Translation failed' }, { status: 502 });
+    }
+
+    const engines = results.map((result) => result?.engine ?? 'none');
+    const engine = engines.every((value) => value === engines[0]) ? engines[0] : 'mixed';
 
     if (Array.isArray(sentences) && sentences.length > 0) {
-      const translations = new Array<string>(sentences.length);
-
-      for (let start = 0; start < sentences.length; start += TRANSLATION_CONCURRENCY) {
-        const chunk = sentences.slice(start, start + TRANSLATION_CONCURRENCY);
-        const chunkTranslations = await Promise.all(
-          chunk.map(async (sentence, offset) => ({
-            index: start + offset,
-            translation: await translateChunk(sentence),
-          })),
-        );
-
-        for (const { index, translation } of chunkTranslations) {
-          translations[index] = translation;
-        }
-      }
-
       return NextResponse.json({
-        translations,
-        engine: 'google-free',
+        translations: results.map((result) => result?.text ?? ''),
+        engines,
+        engine,
       });
     }
 
-    const translation = await translateChunk(text ?? '');
-
     return NextResponse.json({
-      translation,
-      engine: 'google-free',
+      translation: results[0]?.text ?? '',
+      engine,
     });
   } catch (error) {
     console.error('Free translate error:', error);

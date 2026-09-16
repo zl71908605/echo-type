@@ -150,7 +150,7 @@ export function SelectionTranslationProvider({ children }: { children: React.Rea
       setError(null);
 
       try {
-        // Phase 1: Free Google Translate (fast, no API key needed)
+        // Phase 1: keyless engines (Google → MyMemory) — fast, no API key needed
         const freeRes = await fetch('/api/translate/free', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -217,8 +217,51 @@ export function SelectionTranslationProvider({ children }: { children: React.Rea
           return;
         }
 
-        // Free translation also failed — show error
+        // Phase 1b: keyless engines are unreachable (e.g. Google is blocked and
+        // MyMemory is down) — fall back to the built-in AI provider instead of
+        // failing the lookup outright.
         const freeErr = await freeRes.json().catch(() => ({}));
+
+        if (activeApiKey) {
+          const aiHeaderKey = PROVIDER_REGISTRY[activeProviderId]?.headerKey;
+          const aiHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+          if (aiHeaderKey) aiHeaders[aiHeaderKey] = activeApiKey;
+
+          const aiRes = await fetch('/api/translate', {
+            method: 'POST',
+            headers: aiHeaders,
+            body: JSON.stringify({
+              text: translationText,
+              context,
+              targetLang,
+              provider: activeProviderId,
+              providerConfigs,
+              includeRelated: true,
+              selectionType: type,
+            }),
+            signal: controller.signal,
+          });
+
+          if (aiRes.ok) {
+            const aiData = await aiRes.json();
+            const aiResult: TranslationResult = {
+              translation: aiData.translation || aiData.itemTranslation || '',
+              itemTranslation: aiData.itemTranslation || aiData.translation,
+              exampleSentence: aiData.exampleSentence,
+              exampleTranslation: aiData.exampleTranslation,
+              pronunciation: aiData.pronunciation,
+              related: aiData.related,
+            };
+
+            if (aiResult.translation) {
+              translationCache.set(cacheKey, aiResult);
+              setResult(aiResult);
+              updateLookupHistory(historyText, aiResult.translation, type, targetLang, getModuleFromPathname(pathname));
+              return;
+            }
+          }
+        }
+
         setError(freeErr.error || 'Translation failed');
       } catch (err) {
         if ((err as Error).name === 'AbortError') return;
